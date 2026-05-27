@@ -19,8 +19,6 @@
 
 Fit is an ultra-lightweight, high-performance development and terminal workspace inspired by the clean, warm-charcoal aesthetics of Warp. Designed for modern developers who value speed, aesthetics, and minimalist resource usage, Fit combines a beautiful, responsive desktop shell with local git version control, live port previews, a high-performance terminal grid, and a full-featured code editor.
 
-> [!TIP]
-> Fit is designed to run in the background as a workspace hub. Use the `/create-readme` skill or custom command palettes to configure the editor and terminals exactly to your liking.
 
 ---
 
