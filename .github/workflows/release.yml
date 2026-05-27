@@ -26,6 +26,7 @@ jobs:
         run: npm install
 
       - name: Build frontend and compile Tauri app
+        id: tauri_build
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -33,7 +34,7 @@ jobs:
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
           tagName: ${{ github.ref_name }}
-          releaseName: 'Fit v__VERSION__' # Verrà sostituito automaticamente dall'action con la versione reale
+          releaseName: 'Fit v__VERSION__'
           releaseBody: 'See asset list for download.'
           releaseDraft: false
           prerelease: false
@@ -43,56 +44,106 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          # 1. Recupera la firma (.sig) generata e l'URL dell'asset nsis.zip da GitHub Releases
           TAG_NAME="${{ github.ref_name }}"
           VERSION="${TAG_NAME#v}"
-          
-          echo "Generating updater.json for version $VERSION..."
-          
-          # Trova la release cercando prima tramite tag
-          RELEASE_INFO=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
-            "https://api.github.com/repos/${{ github.repository }}/releases/tags/$TAG_NAME")
-          
-          # Se non la trova tramite tag (es: perché è ancora un draft), cercala nella lista completa delle release
-          if echo "$RELEASE_INFO" | grep -q '"message": "Not Found"'; then
-            echo "Release not found by tag. Checking all releases list..."
-            RELEASES_LIST=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
-              "https://api.github.com/repos/${{ github.repository }}/releases")
-            # Trova l'ID della release che ha il tag corrispondente
-            RELEASE_ID=$(echo "$RELEASES_LIST" | grep -B 2 -w "\"tag_name\": \"$TAG_NAME\"" | grep '"id":' | head -n 1 | grep -o '[0-9]\+')
-            if [ -n "$RELEASE_ID" ]; then
-              echo "Found release ID: $RELEASE_ID. Fetching draft release info..."
-              RELEASE_INFO=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
-                "https://api.github.com/repos/${{ github.repository }}/releases/$RELEASE_ID")
-            fi
+
+          echo "=== Generating updater.json for version $VERSION ==="
+
+          # ── 1. Trova la firma (.sig) direttamente dal disco ──
+          echo "Searching for signature files in build output..."
+          find src-tauri/target/release/bundle -type f -name "*.sig" 2>/dev/null || echo "No .sig files found on disk"
+
+          # Prova prima .nsis.zip.sig (updater artifact di Tauri v2)
+          SIG_FILE=$(find src-tauri/target/release/bundle -type f -name "*.nsis.zip.sig" 2>/dev/null | head -n 1)
+
+          # Fallback: prova .exe.sig (firma dell'installer NSIS)
+          if [ -z "$SIG_FILE" ]; then
+            echo "No .nsis.zip.sig found, trying .exe.sig..."
+            SIG_FILE=$(find src-tauri/target/release/bundle -type f -name "*setup*.exe.sig" 2>/dev/null | head -n 1)
           fi
-          
-          # Stampa i nomi degli asset disponibili per debug
-          echo "Available assets:"
-          echo "$RELEASE_INFO" | grep -o '"name": "[^"]*' || echo "No assets found in JSON"
-          
-          # Estrae l'URL di download del file .nsis.zip
-          DOWNLOAD_URL=$(echo "$RELEASE_INFO" | grep -o 'https://github.com/[^"]*nsis.zip' | head -n 1)
-          
-          # Estrae l'URL dell'asset .nsis.zip.sig per scaricare la firma
-          SIG_URL=$(echo "$RELEASE_INFO" | grep -o 'https://github.com/[^"]*nsis.zip.sig' | head -n 1)
-          
-          if [ -z "$DOWNLOAD_URL" ] || [ -z "$SIG_URL" ]; then
-            echo "Error: NSIS Zip or Signature asset not found on Release!"
+
+          # Fallback finale: qualsiasi .sig
+          if [ -z "$SIG_FILE" ]; then
+            echo "No setup.exe.sig found, trying any .sig..."
+            SIG_FILE=$(find src-tauri/target/release/bundle -type f -name "*.sig" 2>/dev/null | head -n 1)
+          fi
+
+          if [ -z "$SIG_FILE" ]; then
+            echo "ERROR: No signature file found in build output!"
             exit 1
           fi
-          
-          # Scarica la firma digitale
-          curl -sL -o signature.sig "$SIG_URL"
-          SIGNATURE=$(cat signature.sig)
-          
-          # Rimuove eventuali spazi bianchi o newline
-          SIGNATURE=$(echo "$SIGNATURE" | tr -d '\r\n[:space:]')
-          
-          # 2. Crea la nuova struttura del file updater.json
+
+          echo "Using signature file: $SIG_FILE"
+          SIGNATURE=$(cat "$SIG_FILE" | tr -d '\r\n')
+          echo "Signature (first 30 chars): ${SIGNATURE:0:30}..."
+
+          # ── 2. Trova il download URL dalla GitHub Release ──
+          echo "Waiting 15s for release to be fully published..."
+          sleep 15
+
+          # Prova a trovare la release tramite tag con retry
+          RELEASE_INFO=""
+          for attempt in 1 2 3; do
+            echo "Attempt $attempt: Fetching release by tag $TAG_NAME..."
+            RELEASE_INFO=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
+              "https://api.github.com/repos/${{ github.repository }}/releases/tags/$TAG_NAME")
+
+            if ! echo "$RELEASE_INFO" | grep -q '"message"'; then
+              echo "Release found by tag!"
+              break
+            fi
+
+            echo "Not found yet. Trying releases list..."
+            ALL_RELEASES=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
+              "https://api.github.com/repos/${{ github.repository }}/releases")
+
+            # Cerca l'ID della release tramite tag_name
+            RELEASE_ID=$(echo "$ALL_RELEASES" | grep -B5 "\"tag_name\": \"$TAG_NAME\"" | grep '"id":' | head -n 1 | grep -o '[0-9]*' | head -n 1)
+
+            if [ -n "$RELEASE_ID" ]; then
+              echo "Found release ID: $RELEASE_ID"
+              RELEASE_INFO=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
+                "https://api.github.com/repos/${{ github.repository }}/releases/$RELEASE_ID")
+              break
+            fi
+
+            echo "Release not found in attempt $attempt. Waiting 10s..."
+            sleep 10
+          done
+
+          # Debug: mostra tutti gli asset disponibili
+          echo ""
+          echo "=== Available release assets ==="
+          echo "$RELEASE_INFO" | grep '"browser_download_url"' || echo "No download URLs found"
+          echo ""
+
+          # Cerca l'URL di download in modo flessibile:
+          # 1. Prima prova .nsis.zip (updater artifact Tauri v2)
+          DOWNLOAD_URL=$(echo "$RELEASE_INFO" | grep -o '"browser_download_url": "[^"]*\.nsis\.zip"' | grep -o 'https://[^"]*' | head -n 1)
+
+          # 2. Fallback: prova qualsiasi .zip (msi.zip o altri)
+          if [ -z "$DOWNLOAD_URL" ]; then
+            echo "No .nsis.zip found, trying any .zip..."
+            DOWNLOAD_URL=$(echo "$RELEASE_INFO" | grep -o '"browser_download_url": "[^"]*\.zip"' | grep -v 'source' | grep -o 'https://[^"]*' | head -n 1)
+          fi
+
+          # 3. Fallback: usa direttamente l'URL dell'installer .exe
+          if [ -z "$DOWNLOAD_URL" ]; then
+            echo "No .zip found, trying setup.exe..."
+            DOWNLOAD_URL=$(echo "$RELEASE_INFO" | grep -o '"browser_download_url": "[^"]*setup[^"]*\.exe"' | grep -o 'https://[^"]*' | head -n 1)
+          fi
+
+          if [ -z "$DOWNLOAD_URL" ]; then
+            echo "ERROR: No suitable download URL found in release assets!"
+            exit 1
+          fi
+
+          echo "Selected download URL: $DOWNLOAD_URL"
+
+          # ── 3. Genera il file updater.json ──
           CURRENT_DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
-          
-          cat <<EOF > updater.json
+
+          cat > updater.json << ENDJSON
           {
             "version": "$VERSION",
             "notes": "Version $VERSION released successfully.",
@@ -104,17 +155,22 @@ jobs:
               }
             }
           }
-          EOF
-          
-          # 3. Effettua il commit e il push del file updater.json aggiornato direttamente su main
+          ENDJSON
+
+          echo ""
+          echo "=== Generated updater.json ==="
+          cat updater.json
+          echo ""
+
+          # ── 4. Commit e push di updater.json su main ──
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          
-          # Torna sul ramo main, aggiorna, sostituisce il file e fa il push
+
           git stash || true
           git checkout main
           git pull origin main
-          mv -f updater.json updater.json
           git add updater.json
           git commit -m "chore: auto-update updater.json to $VERSION [skip ci]" || true
           git push origin main
+
+          echo "=== Done! updater.json pushed to main ==="
