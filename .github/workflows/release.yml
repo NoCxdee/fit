@@ -34,9 +34,9 @@ jobs:
         with:
           tagName: ${{ github.ref_name }}
           releaseName: 'Fit v__VERSION__'
-          releaseBody: 'See asset list for download.'
           releaseDraft: false
           prerelease: false
+          generateReleaseNotes: true
           updaterJsonPreferNsis: true
 
       - name: Download latest.json and push as updater.json
