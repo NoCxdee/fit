@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="public/fit-icon.svg" width="96" alt="Fit Logo" />
+  <img src="public/fit_new_logo.png" width="96" alt="Fit Logo" />
 
   # Fit
   *The Ultra-Lightweight, Warp-Inspired Agentic Development Workspace*
