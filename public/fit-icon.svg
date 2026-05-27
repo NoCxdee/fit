@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="none">
+  <rect width="32" height="32" rx="6" fill="#2b2622"/>
+  <text x="50%" y="54%" dominant-baseline="middle" text-anchor="middle"
+    font-family="Inter, system-ui, sans-serif" font-weight="600"
+    font-size="16" fill="#f7f5f0" letter-spacing="-0.5">
+    F
+  </text>
+</svg>

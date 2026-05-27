@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/png" href="/fit_new_logo.png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Fit</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Inter:wght@400;500;600&family=Instrument+Serif&family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <div id="error-overlay" style="color: red; position: fixed; z-index: 9999; background: black; padding: 20px; display: none; white-space: pre-wrap; font-family: monospace;"></div>
+    <script>
+      window.addEventListener('error', function(e) {
+        document.getElementById('error-overlay').style.display = 'block';
+        document.getElementById('error-overlay').innerText += e.message + '\\n' + (e.error ? e.error.stack : '') + '\\n\\n';
+      });
+      window.addEventListener('unhandledrejection', function(e) {
+        document.getElementById('error-overlay').style.display = 'block';
+        document.getElementById('error-overlay').innerText += 'Unhandled Promise Rejection: ' + e.reason + '\\n\\n';
+      });
+    </script>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
