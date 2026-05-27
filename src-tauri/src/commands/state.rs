@@ -17,6 +17,8 @@ pub struct Workspace {
     pub icon: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub color: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub last_opened: Option<u64>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]

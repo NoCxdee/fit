@@ -21,6 +21,8 @@ const initialState: AppState = {
   panelSizes: {},
   useWebGl: true,
   settingsOpen: false,
+  aboutOpen: false,
+  pendingUpdate: null,
   diffSidebarOpen: false,
   diffFilePath: null,
 };
@@ -321,6 +323,18 @@ function appReducer(state: AppState, action: AppAction): AppState {
         settingsOpen: !state.settingsOpen,
       };
 
+    case 'TOGGLE_ABOUT':
+      return {
+        ...state,
+        aboutOpen: !state.aboutOpen,
+      };
+
+    case 'SET_PENDING_UPDATE':
+      return {
+        ...state,
+        pendingUpdate: action.payload,
+      };
+
     case 'OPEN_TAB': {
       const workspaceId = action.payload.workspaceId || state.activeWorkspaceId || '';
       const sessionId = action.payload.sessionId || state.activeSessionId || '';
@@ -467,6 +481,8 @@ function appReducer(state: AppState, action: AppAction): AppState {
         openTabs: migratedTabs,
         useWebGl: action.payload.useWebGl !== undefined ? action.payload.useWebGl : true,
         settingsOpen: false,
+        aboutOpen: false,
+        pendingUpdate: null,
         drawerTab: action.payload.drawerTab || 'files',
         gitStatus: null,
         diffSidebarOpen: false,

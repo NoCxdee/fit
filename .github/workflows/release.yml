@@ -1,0 +1,102 @@
+name: Release Build and Update
+
+on:
+  push:
+    tags:
+      - 'v*' # Si attiva quando fai il push di un tag che inizia con v (es: v0.2.0)
+
+jobs:
+  release:
+    permissions:
+      contents: write
+    runs-on: windows-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-size: '18'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build frontend and compile Tauri app
+        uses: tauri-apps/tauri-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        with:
+          tagName: ${{ github.ref_name }}
+          releaseName: 'Fit v__VERSION__' # Verrà sostituito automaticamente dall'action con la versione reale
+          releaseBody: 'See asset list for download.'
+          releaseDraft: false
+          prerelease: false
+
+      - name: Generate and Update updater.json
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # 1. Recupera la firma (.sig) generata e l'URL dell'asset nsis.zip da GitHub Releases
+          TAG_NAME="${{ github.ref_name }}"
+          VERSION="${TAG_NAME#v}"
+          
+          echo "Generating updater.json for version $VERSION..."
+          
+          # Trova gli asset della release appena creata
+          RELEASE_INFO=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
+            "https://api.github.com/repos/${{ github.repository }}/releases/tags/$TAG_NAME")
+          
+          # Estrae l'URL di download del file .nsis.zip
+          DOWNLOAD_URL=$(echo "$RELEASE_INFO" | grep -o 'https://github.com/[^"]*nsis.zip' | head -n 1)
+          
+          # Estrae l'URL dell'asset .nsis.zip.sig per scaricare la firma
+          SIG_URL=$(echo "$RELEASE_INFO" | grep -o 'https://github.com/[^"]*nsis.zip.sig' | head -n 1)
+          
+          if [ -z "$DOWNLOAD_URL" ] || [ -z "$SIG_URL" ]; then
+            echo "Error: NSIS Zip or Signature asset not found on Release!"
+            exit 1
+          fi
+          
+          # Scarica la firma digitale
+          curl -sL -o signature.sig "$SIG_URL"
+          SIGNATURE=$(cat signature.sig)
+          
+          # Rimuove eventuali spazi bianchi o newline
+          SIGNATURE=$(echo "$SIGNATURE" | tr -d '\r\n[:space:]')
+          
+          # 2. Crea la nuova struttura del file updater.json
+          CURRENT_DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+          
+          cat <<EOF > updater.json
+          {
+            "version": "$VERSION",
+            "notes": "Version $VERSION released successfully.",
+            "pub_date": "$CURRENT_DATE",
+            "platforms": {
+              "windows-x86_64": {
+                "signature": "$SIGNATURE",
+                "url": "$DOWNLOAD_URL"
+              }
+            }
+          }
+          EOF
+          
+          # 3. Effettua il commit e il push del file updater.json aggiornato direttamente su main
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          
+          # Torna sul ramo main, aggiorna, sostituisce il file e fa il push
+          git stash || true
+          git checkout main
+          git pull origin main
+          mv -f updater.json updater.json
+          git add updater.json
+          git commit -m "chore: auto-update updater.json to $VERSION [skip ci]" || true
+          git push origin main

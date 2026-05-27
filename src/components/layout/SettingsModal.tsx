@@ -153,7 +153,14 @@ export function SettingsModal() {
 
   const [activeTab, setActiveTab] = useState<'general' | 'shortcuts'>('general');
 
-  const [checkOnStartup, setCheckOnStartup] = useState(true);
+  const [checkOnStartup, setCheckOnStartup] = useState(() => {
+    try {
+      const stored = localStorage.getItem('fit_check_on_startup');
+      return stored !== null ? stored === 'true' : true;
+    } catch {
+      return true;
+    }
+  });
   const [checkingUpdate, setCheckingUpdate] = useState(false);
   const [updateStatus, setUpdateStatus] = useState<string | null>(null);
   const [updateAvailable, setUpdateAvailable] = useState<{ version: string; body?: string } | null>(null);
@@ -179,6 +186,26 @@ export function SettingsModal() {
 
   const handleClose = () => {
     dispatch({ type: 'TOGGLE_SETTINGS' });
+  };
+
+  const handleToggleCheckOnStartup = () => {
+    const nextVal = !checkOnStartup;
+    setCheckOnStartup(nextVal);
+    try {
+      localStorage.setItem('fit_check_on_startup', String(nextVal));
+    } catch (e) {
+      console.error('Failed to save updater preference:', e);
+    }
+  };
+
+  const handleOpenUpdateModal = () => {
+    if (updateAvailable) {
+      dispatch({ type: 'TOGGLE_SETTINGS' });
+      dispatch({
+        type: 'SET_PENDING_UPDATE',
+        payload: { version: updateAvailable.version, body: updateAvailable.body },
+      });
+    }
   };
 
   const handleCheckUpdate = async (silent = false) => {
@@ -300,7 +327,7 @@ export function SettingsModal() {
                   label={t('settings.checkOnStartup')}
                   description={t('settings.checkOnStartupDesc')}
                   checked={checkOnStartup}
-                  onChange={() => setCheckOnStartup(v => !v)}
+                  onChange={handleToggleCheckOnStartup}
                 />
               </section>
 
@@ -335,17 +362,11 @@ export function SettingsModal() {
                 {updateAvailable && !downloading && (
                   <button
                     className="settings-check-btn"
-                    onClick={handleInstallUpdate}
+                    onClick={handleOpenUpdateModal}
                     style={{ marginTop: 'var(--space-sm)', alignSelf: 'flex-start' }}
                   >
-                    {t('settings.updater.install')}
+                    {t('settings.updater.view') || 'View Update'}
                   </button>
-                )}
-                {downloading && (
-                  <div className="settings-update-status">
-                    <span className="settings-check-btn__spinner" style={{ display: 'inline-block', marginRight: '6px' }} />
-                    {t('settings.updater.downloading')}
-                  </div>
                 )}
               </section>
             </div>

@@ -9,6 +9,7 @@ export interface Workspace {
   path: string;
   icon?: string;
   color?: string;
+  lastOpened?: number;
 }
 
 // ── Session ──────────────────────────────────────────────────────
@@ -118,6 +119,8 @@ export interface AppState {
   panelSizes: Record<string, number[]>;
   useWebGl: boolean;
   settingsOpen: boolean;
+  aboutOpen: boolean;
+  pendingUpdate: { version: string; body?: string } | null;
   diffSidebarOpen: boolean;
   diffFilePath: string | null;
 }
@@ -137,6 +140,8 @@ export type AppAction =
   | { type: 'TOGGLE_SESSION_PREVIEW'; payload: { sessionId: string } }
   | { type: 'SET_USE_WEBGL'; payload: boolean }
   | { type: 'TOGGLE_SETTINGS' }
+  | { type: 'TOGGLE_ABOUT' }
+  | { type: 'SET_PENDING_UPDATE'; payload: { version: string; body?: string } | null }
   | { type: 'OPEN_TAB'; payload: Tab }
   | { type: 'CLOSE_TAB'; payload: string }
   | { type: 'SET_ACTIVE_TAB'; payload: string }

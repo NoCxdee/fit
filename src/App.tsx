@@ -11,10 +11,12 @@ import { MainContent } from './components/layout/MainContent';
 import { FileDrawer } from './components/layout/FileDrawer';
 import { DiffSidebar } from './components/layout/DiffSidebar';
 import { SettingsModal } from './components/layout/SettingsModal';
+import { AboutModal } from './components/layout/AboutModal';
+import { UpdateModal } from './components/layout/UpdateModal';
 import { WelcomeScreen } from './components/layout/WelcomeScreen';
 import { Loader } from './components/layout/Loader';
 import { useAppState, useAppDispatch } from './stores/appStore';
-import { loadState, saveState, gitStatus } from './utils/ipc';
+import { loadState, saveState, gitStatus, checkUpdate } from './utils/ipc';
 import { generateId } from './utils/generateId';
 
 export function App() {
@@ -28,7 +30,7 @@ export function App() {
     setShowLoader(false);
   };
 
-  // Load state on mount
+  // Load state on mount and check updates
   useEffect(() => {
     async function init() {
       try {
@@ -40,6 +42,23 @@ export function App() {
         console.error('Failed to load state:', err);
       } finally {
         initialized.current = true;
+        
+        // Check for updates on startup if enabled
+        try {
+          const stored = localStorage.getItem('fit_check_on_startup');
+          const checkEnabled = stored !== null ? stored === 'true' : true;
+          if (checkEnabled) {
+            const result = await checkUpdate();
+            if (result && result.available) {
+              dispatch({
+                type: 'SET_PENDING_UPDATE',
+                payload: { version: result.version, body: result.body }
+              });
+            }
+          }
+        } catch (updateErr) {
+          console.error('Startup update check failed:', updateErr);
+        }
       }
     }
     init();
@@ -77,6 +96,44 @@ export function App() {
 
     return () => clearTimeout(timeoutId);
   }, [state]);
+
+  // Save active workspace to recent projects in localStorage
+  useEffect(() => {
+    if (state.activeWorkspaceId) {
+      const activeWorkspace = state.workspaces.find(w => w.id === state.activeWorkspaceId);
+      if (activeWorkspace) {
+        try {
+          const recentsRaw = localStorage.getItem('fit_recent_projects');
+          const recents = recentsRaw ? JSON.parse(recentsRaw) : [];
+          const existingIndex = recents.findIndex((p: any) => p.path === activeWorkspace.path);
+          
+          const newProject = {
+            id: activeWorkspace.id,
+            name: activeWorkspace.name,
+            path: activeWorkspace.path,
+            color: activeWorkspace.color,
+            icon: activeWorkspace.icon,
+            lastOpened: Date.now(),
+          };
+
+          if (existingIndex > -1) {
+            recents[existingIndex] = newProject;
+          } else {
+            recents.push(newProject);
+          }
+
+          // Sort by lastOpened desc
+          recents.sort((a: any, b: any) => b.lastOpened - a.lastOpened);
+          
+          // Keep max 10 recent projects
+          const trimmed = recents.slice(0, 10);
+          localStorage.setItem('fit_recent_projects', JSON.stringify(trimmed));
+        } catch (e) {
+          console.error('Failed to save recent projects:', e);
+        }
+      }
+    }
+  }, [state.activeWorkspaceId, state.workspaces]);
 
   // Poll Git status for the active workspace globally
   useEffect(() => {
@@ -213,6 +270,8 @@ export function App() {
 
       {/* Global Settings Modal overlay */}
       <SettingsModal />
+      <AboutModal />
+      <UpdateModal />
     </div>
   );
 }
