@@ -49,9 +49,27 @@ jobs:
           
           echo "Generating updater.json for version $VERSION..."
           
-          # Trova gli asset della release appena creata
+          # Trova la release cercando prima tramite tag
           RELEASE_INFO=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
             "https://api.github.com/repos/${{ github.repository }}/releases/tags/$TAG_NAME")
+          
+          # Se non la trova tramite tag (es: perché è ancora un draft), cercala nella lista completa delle release
+          if echo "$RELEASE_INFO" | grep -q '"message": "Not Found"'; then
+            echo "Release not found by tag. Checking all releases list..."
+            RELEASES_LIST=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
+              "https://api.github.com/repos/${{ github.repository }}/releases")
+            # Trova l'ID della release che ha il tag corrispondente
+            RELEASE_ID=$(echo "$RELEASES_LIST" | grep -B 2 -w "\"tag_name\": \"$TAG_NAME\"" | grep '"id":' | head -n 1 | grep -o '[0-9]\+')
+            if [ -n "$RELEASE_ID" ]; then
+              echo "Found release ID: $RELEASE_ID. Fetching draft release info..."
+              RELEASE_INFO=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
+                "https://api.github.com/repos/${{ github.repository }}/releases/$RELEASE_ID")
+            fi
+          fi
+          
+          # Stampa i nomi degli asset disponibili per debug
+          echo "Available assets:"
+          echo "$RELEASE_INFO" | grep -o '"name": "[^"]*' || echo "No assets found in JSON"
           
           # Estrae l'URL di download del file .nsis.zip
           DOWNLOAD_URL=$(echo "$RELEASE_INFO" | grep -o 'https://github.com/[^"]*nsis.zip' | head -n 1)
