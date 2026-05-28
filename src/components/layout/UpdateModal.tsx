@@ -6,6 +6,7 @@ import { useState } from 'react';
 import { useAppState, useAppDispatch } from '../../stores/appStore';
 import { useTranslation } from '../../i18n';
 import { installUpdate } from '../../utils/ipc';
+import packageInfo from '../../../package.json';
 
 function formatReleaseNotes(body: string | undefined) {
   if (!body) return null;
@@ -74,7 +75,7 @@ export function UpdateModal() {
             <h1 className="update-modal__title">{t('settings.updater.available', { version: pendingUpdate.version })}</h1>
             <p className="update-modal__subtitle">A new version of Fit is available for download.</p>
             <div className="update-modal__version-badges">
-              <span className="update-modal__badge update-modal__badge--current">v0.1.0</span>
+              <span className="update-modal__badge update-modal__badge--current">v{packageInfo.version}</span>
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="update-modal__badge-arrow">
                 <line x1="5" y1="12" x2="19" y2="12" />
                 <polyline points="12 5 19 12 12 19" />
