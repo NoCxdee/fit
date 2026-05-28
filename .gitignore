@@ -33,6 +33,11 @@ Thumbs.db
 # Rust / Tauri targets
 src-tauri/target/
 
+# Gemini CLI
+.gemini/
+app-releaser/
+*.skill
+
 # IDE configurations
 .vscode/
 .idea/
