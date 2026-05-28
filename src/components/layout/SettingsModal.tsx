@@ -188,12 +188,7 @@ export function SettingsModal() {
     }
   }, [settingsOpen]);
 
-  useEffect(() => {
-    if (settingsOpen && checkOnStartup) {
-      handleCheckUpdate(true);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [settingsOpen]);
+
 
   if (!settingsOpen) return null;
 
@@ -248,10 +243,7 @@ export function SettingsModal() {
           );
         }
       } else if (result.available) {
-        setUpdateAvailable({ version: result.version, body: result.body });
-        setUpdateStatus(t('settings.updater.available', { version: result.version }));
-        
-        // Automatically open the update modal
+        // Automatically open the update modal directly
         dispatch({ type: 'TOGGLE_SETTINGS' });
         dispatch({
           type: 'SET_PENDING_UPDATE',
