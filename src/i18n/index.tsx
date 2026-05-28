@@ -41,6 +41,7 @@ const translations: Record<Lang, Record<string, string>> = {
     'drawer.noWorkspace': 'No workspace selected',
     'drawer.loading': 'Loading...',
     'drawer.emptyWorkspace': 'Workspace is empty',
+    'drawer.searchPlaceholder': 'Search files',
 
     // Git
     'git.noActiveWorkspace': 'No active workspace',
@@ -168,6 +169,7 @@ const translations: Record<Lang, Record<string, string>> = {
     'drawer.noWorkspace': 'Nessun workspace selezionato',
     'drawer.loading': 'Caricamento...',
     'drawer.emptyWorkspace': 'Il workspace è vuoto',
+    'drawer.searchPlaceholder': 'Cerca file',
 
     'git.noActiveWorkspace': 'Nessun workspace attivo',
     'git.loading': 'Caricamento stato Git...',
@@ -290,6 +292,7 @@ const translations: Record<Lang, Record<string, string>> = {
     'drawer.noWorkspace': 'Ningún workspace seleccionado',
     'drawer.loading': 'Cargando...',
     'drawer.emptyWorkspace': 'El workspace está vacío',
+    'drawer.searchPlaceholder': 'Buscar archivos',
 
     'git.noActiveWorkspace': 'Ningún workspace activo',
     'git.loading': 'Cargando estado de Git...',
@@ -412,6 +415,7 @@ const translations: Record<Lang, Record<string, string>> = {
     'drawer.noWorkspace': 'Aucun workspace sélectionné',
     'drawer.loading': 'Chargement...',
     'drawer.emptyWorkspace': 'Le workspace est vide',
+    'drawer.searchPlaceholder': 'Rechercher des fichiers',
 
     'git.noActiveWorkspace': 'Aucun workspace actif',
     'git.loading': 'Chargement du statut Git...',
@@ -534,6 +538,7 @@ const translations: Record<Lang, Record<string, string>> = {
     'drawer.noWorkspace': 'Kein Workspace ausgewählt',
     'drawer.loading': 'Laden...',
     'drawer.emptyWorkspace': 'Workspace ist leer',
+    'drawer.searchPlaceholder': 'Dateien suchen',
 
     'git.noActiveWorkspace': 'Kein aktiver Workspace',
     'git.loading': 'Git-Status wird geladen...',

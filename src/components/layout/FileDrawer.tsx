@@ -6,9 +6,25 @@ import { useState, useCallback, useEffect, useRef } from 'react';
 import { useAppState, useAppDispatch } from '../../stores/appStore';
 import { useTranslation } from '../../i18n';
 import { getFileIcon, FolderClosedIcon, FolderOpenIcon } from '../../utils/fileIcons';
-import { readDir, gitStatus, gitStage, gitUnstage, gitStageAll, gitUnstageAll, gitCommit, gitPush, gitPull, gitFetch, gitDiscardFile } from '../../utils/ipc';
+import { 
+  readDir, 
+  gitStatus, 
+  gitStage, 
+  gitUnstage, 
+  gitStageAll, 
+  gitUnstageAll, 
+  gitCommit, 
+  gitPush, 
+  gitPull, 
+  gitFetch, 
+  gitDiscardFile,
+  createFile,
+  createDir,
+  searchFiles
+} from '../../utils/ipc';
 import type { FileEntry } from '../../types';
 import { ResizeHandle } from './ResizeHandle';
+import { Search, FilePlus2, FolderPlus, RotateCw } from 'lucide-react';
 
 interface TreeItemProps {
   entry: FileEntry;
@@ -625,6 +641,15 @@ export function FileDrawer() {
   const [loading, setLoading] = useState(false);
   const lastPathRef = useRef<string>('');
 
+  // Search & inline create states
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<FileEntry[]>([]);
+  const [searching, setSearching] = useState(false);
+  const [isAddingFile, setIsAddingFile] = useState(false);
+  const [isAddingFolder, setIsAddingFolder] = useState(false);
+  const [newItemName, setNewItemName] = useState('');
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
   const [drawerWidth, setDrawerWidth] = useState<number>((panelSizes || {})['fileDrawer']?.[0] ?? 300);
   const drawerWidthRef = useRef(drawerWidth);
   drawerWidthRef.current = drawerWidth;
@@ -665,6 +690,17 @@ export function FileDrawer() {
 
   const activeWorkspace = workspaces.find(w => w.id === activeWorkspaceId);
 
+  const refreshFiles = useCallback(() => {
+    if (!activeWorkspace) return;
+    setLoading(true);
+    readDir(activeWorkspace.path)
+      .then(entries => {
+        setRootEntries(entries);
+      })
+      .catch(err => console.error('Error loading workspace root:', err))
+      .finally(() => setLoading(false));
+  }, [activeWorkspace]);
+
   useEffect(() => {
     if (fileDrawerOpen && activeWorkspace && drawerTab === 'files') {
       const currentPath = activeWorkspace.path;
@@ -700,6 +736,26 @@ export function FileDrawer() {
     }
   }, [fileDrawerOpen, activeWorkspace, refreshGit]);
 
+  // Debounced search effect
+  useEffect(() => {
+    if (!activeWorkspace || searchQuery.trim() === '') {
+      setSearchResults([]);
+      setSearching(false);
+      return;
+    }
+    setSearching(true);
+    const delayDebounce = setTimeout(() => {
+      searchFiles(activeWorkspace.path, searchQuery)
+        .then(results => {
+          setSearchResults(results);
+        })
+        .catch(err => console.error('Search error:', err))
+        .finally(() => setSearching(false));
+    }, 200);
+
+    return () => clearTimeout(delayDebounce);
+  }, [searchQuery, activeWorkspace]);
+
   const handleFileClick = useCallback((entry: FileEntry) => {
     dispatch({
       type: 'OPEN_TAB',
@@ -711,6 +767,49 @@ export function FileDrawer() {
       },
     });
   }, [dispatch]);
+
+  const handleCreateItemSubmit = async () => {
+    if (!activeWorkspace || !newItemName.trim()) {
+      cancelCreate();
+      return;
+    }
+
+    const fullPath = `${activeWorkspace.path}/${newItemName.trim()}`;
+    try {
+      if (isAddingFile) {
+        await createFile(fullPath);
+        // Automatically open the new file in the editor!
+        dispatch({
+          type: 'OPEN_TAB',
+          payload: {
+            id: `tab-editor-${fullPath}`,
+            type: 'editor',
+            title: newItemName.trim().split('/').pop() || newItemName.trim(),
+            filePath: fullPath,
+          },
+        });
+      } else {
+        await createDir(fullPath);
+      }
+      refreshFiles();
+      cancelCreate();
+    } catch (err) {
+      console.error('Failed to create item:', err);
+      cancelCreate();
+    }
+  };
+
+  const cancelCreate = () => {
+    setIsAddingFile(false);
+    setIsAddingFolder(false);
+    setNewItemName('');
+  };
+
+  const handleFocusSearch = () => {
+    if (searchInputRef.current) {
+      searchInputRef.current.focus();
+    }
+  };
 
   const totalChanges = activeWorkspace && status?.isRepo ? (status.staged.length + status.unstaged.length) : 0;
   const changesText = activeWorkspace && status?.isRepo
@@ -747,41 +846,203 @@ export function FileDrawer() {
 
       <div className="file-drawer__content" style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, overflow: 'hidden' }}>
         {drawerTab === 'files' ? (
-          <div className="file-drawer__tree" style={{ flex: 1, overflowY: 'auto' }}>
-            {!activeWorkspace ? (
-              <p style={{
-                padding: 'var(--space-lg)',
-                color: 'var(--color-mute)',
-                fontSize: 'var(--text-caption)',
-              }}>
-                {t('drawer.noWorkspace')}
-              </p>
-            ) : loading ? (
-              <p style={{
-                padding: 'var(--space-lg)',
-                color: 'var(--color-mute)',
-                fontSize: 'var(--text-caption)',
-              }}>
-                {t('drawer.loading')}
-              </p>
-            ) : rootEntries.length === 0 ? (
-              <p style={{
-                padding: 'var(--space-lg)',
-                color: 'var(--color-mute)',
-                fontSize: 'var(--text-caption)',
-              }}>
-                {t('drawer.emptyWorkspace')}
-              </p>
-            ) : (
-              rootEntries.map(entry => (
-                <TreeItem
-                  key={entry.path}
-                  entry={entry}
-                  depth={0}
-                  onFileClick={handleFileClick}
-                />
-              ))
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, overflow: 'hidden' }}>
+            {activeWorkspace && (
+              <>
+                {/* Workspace Header Block */}
+                <div className="file-drawer__workspace-header">
+                  <span className="file-drawer__workspace-title" title={activeWorkspace.path}>
+                    {activeWorkspace.name}
+                  </span>
+                  <div className="file-drawer__workspace-actions">
+                    <button 
+                      className="file-drawer__action-btn" 
+                      onClick={handleFocusSearch} 
+                      title={t('drawer.search') || 'Search files'}
+                    >
+                      <Search size={14} />
+                    </button>
+                    <button 
+                      className="file-drawer__action-btn" 
+                      onClick={() => { cancelCreate(); setIsAddingFile(true); }} 
+                      title={t('drawer.newFile') || 'New File'}
+                    >
+                      <FilePlus2 size={14} />
+                    </button>
+                    <button 
+                      className="file-drawer__action-btn" 
+                      onClick={() => { cancelCreate(); setIsAddingFolder(true); }} 
+                      title={t('drawer.newFolder') || 'New Folder'}
+                    >
+                      <FolderPlus size={14} />
+                    </button>
+                    <button 
+                      className="file-drawer__action-btn" 
+                      onClick={() => { refreshFiles(); refreshGit(); }} 
+                      title={t('drawer.refresh') || 'Refresh'}
+                    >
+                      <RotateCw size={14} />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Always-visible Search Input */}
+                <div className="file-drawer__search-wrapper">
+                  <input
+                    ref={searchInputRef}
+                    className="file-drawer__search-input"
+                    type="text"
+                    placeholder={t('drawer.searchPlaceholder') || 'Search files'}
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                  />
+                </div>
+              </>
             )}
+
+            {/* File List / Results Tree Container */}
+            <div className="file-drawer__tree" style={{ flex: 1, overflowY: 'auto' }}>
+              {!activeWorkspace ? (
+                <p style={{
+                  padding: 'var(--space-lg)',
+                  color: 'var(--color-mute)',
+                  fontSize: 'var(--text-caption)',
+                }}>
+                  {t('drawer.noWorkspace')}
+                </p>
+              ) : loading && searchQuery.trim() === '' ? (
+                <p style={{
+                  padding: 'var(--space-lg)',
+                  color: 'var(--color-mute)',
+                  fontSize: 'var(--text-caption)',
+                }}>
+                  {t('drawer.loading')}
+                </p>
+              ) : searchQuery.trim() !== '' ? (
+                /* Flat search results view */
+                <>
+                  {searching && searchResults.length === 0 ? (
+                    <p style={{
+                      padding: 'var(--space-lg)',
+                      color: 'var(--color-mute)',
+                      fontSize: 'var(--text-caption)',
+                    }}>
+                      {t('drawer.searching') || 'Searching...'}
+                    </p>
+                  ) : searchResults.length === 0 ? (
+                    <p style={{
+                      padding: 'var(--space-lg)',
+                      color: 'var(--color-mute)',
+                      fontSize: 'var(--text-caption)',
+                    }}>
+                      {t('drawer.noResults') || 'No files match your query.'}
+                    </p>
+                  ) : (
+                    <div className="file-drawer__search-results">
+                      {searchResults.map(entry => {
+                        const relPath = entry.path.replace(activeWorkspace.path, '').replace(/^[\\/]/, '');
+                        const icon = !entry.isDir ? getFileIcon(entry.name) : null;
+                        return (
+                          <div
+                            key={entry.path}
+                            className="file-drawer__search-result-item"
+                            onClick={() => {
+                              if (!entry.isDir) {
+                                handleFileClick(entry);
+                              }
+                            }}
+                          >
+                            <span
+                              className="file-tree-item__icon"
+                              style={{
+                                width: '14px',
+                                height: '14px',
+                                fontSize: '10px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                flexShrink: 0,
+                                color: entry.isDir ? undefined : icon?.color,
+                                marginRight: '8px',
+                              }}
+                            >
+                              {entry.isDir ? <FolderClosedIcon /> : icon?.icon}
+                            </span>
+                            <div className="file-drawer__search-result-details">
+                              <span className="file-drawer__search-result-name">{entry.name}</span>
+                              <span className="file-drawer__search-result-path" title={entry.path}>
+                                {relPath}
+                              </span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </>
+              ) : (
+                /* Standard tree listing */
+                <>
+                  {/* Inline Creation Rows */}
+                  {(isAddingFile || isAddingFolder) && (
+                    <div className="file-drawer__inline-create">
+                      <span
+                        className="file-tree-item__icon"
+                        style={{
+                          width: '14px',
+                          height: '14px',
+                          fontSize: '10px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          flexShrink: 0,
+                          marginLeft: '12px',
+                          marginRight: '6px',
+                          color: isAddingFile ? '#e3cfb3' : 'var(--color-primary)',
+                        }}
+                      >
+                        {isAddingFile ? getFileIcon(newItemName).icon : <FolderClosedIcon />}
+                      </span>
+                      <input
+                        className="file-drawer__create-input"
+                        type="text"
+                        placeholder={isAddingFile ? 'New file' : 'New folder'}
+                        value={newItemName}
+                        onChange={(e) => setNewItemName(e.target.value)}
+                        onBlur={handleCreateItemSubmit}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            handleCreateItemSubmit();
+                          } else if (e.key === 'Escape') {
+                            cancelCreate();
+                          }
+                        }}
+                        autoFocus
+                      />
+                    </div>
+                  )}
+
+                  {rootEntries.length === 0 ? (
+                    <p style={{
+                      padding: 'var(--space-lg)',
+                      color: 'var(--color-mute)',
+                      fontSize: 'var(--text-caption)',
+                    }}>
+                      {t('drawer.emptyWorkspace')}
+                    </p>
+                  ) : (
+                    rootEntries.map(entry => (
+                      <TreeItem
+                        key={entry.path}
+                        entry={entry}
+                        depth={0}
+                        onFileClick={handleFileClick}
+                      />
+                    ))
+                  )}
+                </>
+              )}
+            </div>
           </div>
         ) : (
           <GitPanel refresh={refreshGit} />

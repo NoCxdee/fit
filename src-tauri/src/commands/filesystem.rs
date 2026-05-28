@@ -77,3 +77,70 @@ pub fn write_file(path: String, content: String) -> Result<(), String> {
     }
     fs::write(&path, content).map_err(|e| format!("Failed to write file {}: {}", path, e))
 }
+
+/// Create a new empty file, ensuring parent directories exist.
+#[tauri::command]
+pub fn create_file(path: String) -> Result<(), String> {
+    let p = Path::new(&path);
+    if let Some(parent) = p.parent() {
+        fs::create_dir_all(parent).map_err(|e| e.to_string())?;
+    }
+    fs::write(p, "").map_err(|e| format!("Failed to create file {}: {}", path, e))
+}
+
+/// Create a new directory and any missing parent directories.
+#[tauri::command]
+pub fn create_dir(path: String) -> Result<(), String> {
+    let p = Path::new(&path);
+    fs::create_dir_all(p).map_err(|e| format!("Failed to create directory {}: {}", path, e))
+}
+
+/// Search for files recursively under a workspace path matching the query (limit 100).
+#[tauri::command]
+pub fn search_files(path: String, query: String) -> Result<Vec<FileEntry>, String> {
+    let dir = Path::new(&path);
+    if !dir.is_dir() {
+        return Err(format!("Not a directory: {}", path));
+    }
+    let mut results = Vec::new();
+    if query.trim().is_empty() {
+        return Ok(results);
+    }
+    search_dir_limit(dir, &query, &mut results, 100);
+    Ok(results)
+}
+
+fn search_dir_limit(dir: &Path, query: &str, results: &mut Vec<FileEntry>, limit: usize) {
+    if results.len() >= limit {
+        return;
+    }
+    if let Ok(read) = fs::read_dir(dir) {
+        for entry in read {
+            if results.len() >= limit {
+                break;
+            }
+            if let Ok(entry) = entry {
+                let name = entry.file_name().to_string_lossy().to_string();
+                // Skip common junk/compiled/git folders
+                if name == ".git" || name == "target" || name == ".DS_Store" || name == "desktop.ini" || name == "node_modules" {
+                    continue;
+                }
+                let path_buf = entry.path();
+                let is_dir = path_buf.is_dir();
+                if name.to_lowercase().contains(&query.to_lowercase()) {
+                    results.push(FileEntry {
+                        name: name.clone(),
+                        path: path_buf.to_string_lossy().to_string(),
+                        is_dir,
+                        size: if !is_dir { entry.metadata().ok().map(|m| m.len()) } else { None },
+                        children: None,
+                    });
+                }
+                if is_dir {
+                    search_dir_limit(&path_buf, query, results, limit);
+                }
+            }
+        }
+    }
+}
+

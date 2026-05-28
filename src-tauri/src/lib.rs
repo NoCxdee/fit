@@ -33,6 +33,9 @@ pub fn run() {
             commands::filesystem::read_dir,
             commands::filesystem::read_file,
             commands::filesystem::write_file,
+            commands::filesystem::create_file,
+            commands::filesystem::create_dir,
+            commands::filesystem::search_files,
             // PTY
             commands::pty::pty_spawn,
             commands::pty::pty_write,

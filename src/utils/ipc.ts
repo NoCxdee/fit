@@ -149,3 +149,21 @@ export async function installUpdate(): Promise<void> {
     throw err;
   }
 }
+
+export async function createFile(path: string): Promise<void> {
+  return await invoke<void>('create_file', { path });
+}
+
+export async function createDir(path: string): Promise<void> {
+  return await invoke<void>('create_dir', { path });
+}
+
+export async function searchFiles(path: string, query: string): Promise<FileEntry[]> {
+  try {
+    return await invoke<FileEntry[]>('search_files', { path, query });
+  } catch (error) {
+    console.error('IPC searchFiles error:', error);
+    return [];
+  }
+}
+

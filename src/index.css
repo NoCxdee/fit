@@ -550,6 +550,7 @@ body {
   align-items: center;
   padding: var(--space-sm) 0;
   background: var(--color-canvas);
+  border-right: 1px solid var(--color-hairline);
   gap: var(--space-sm);
   flex-shrink: 0;
   overflow-y: auto;
@@ -1026,6 +1027,173 @@ body {
   flex-shrink: 0;
   overflow: visible;
   position: relative;
+}
+
+/* ── Workspace Header & Actions ──────────────────────────────── */
+.file-drawer__workspace-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-md) var(--space-lg);
+  border-bottom: 1px solid var(--color-hairline);
+  background: var(--color-canvas);
+}
+
+.file-drawer__workspace-title {
+  font-family: var(--font-sans);
+  font-size: var(--text-body-sm);
+  font-weight: 600;
+  color: var(--color-ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+  margin-right: var(--space-sm);
+  letter-spacing: -0.2px;
+}
+
+.file-drawer__workspace-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xxs);
+}
+
+.file-drawer__action-btn {
+  background: transparent;
+  border: none;
+  color: var(--color-mute);
+  width: 24px;
+  height: 24px;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background var(--transition-fast), color var(--transition-fast), transform var(--transition-fast);
+}
+
+.file-drawer__action-btn:hover {
+  background: var(--color-canvas-soft);
+  color: var(--color-ink);
+  transform: translateY(-0.5px);
+}
+
+.file-drawer__action-btn:active {
+  transform: scale(0.92);
+}
+
+/* ── Search Input Styles ─────────────────────────────────────── */
+.file-drawer__search-wrapper {
+  padding: var(--space-sm) var(--space-lg);
+  background: var(--color-canvas);
+  border-bottom: 1px solid var(--color-hairline);
+}
+
+.file-drawer__search-input {
+  width: 100%;
+  height: 28px;
+  padding: 0 var(--space-md);
+  background: var(--color-canvas-soft);
+  border: 1px solid var(--color-hairline);
+  border-radius: var(--radius-md);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  font-size: 12px;
+  outline: none;
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.file-drawer__search-input:focus {
+  border-color: var(--color-accent-amber);
+  box-shadow: 0 0 0 1.5px rgba(212, 168, 87, 0.15);
+}
+
+.file-drawer__search-input::placeholder {
+  color: var(--color-mute);
+  opacity: 0.7;
+}
+
+/* ── Inline Creation Inputs ──────────────────────────────────── */
+.file-drawer__inline-create {
+  display: flex;
+  align-items: center;
+  height: 32px;
+  padding: 0 var(--space-md);
+  background: rgba(255, 255, 255, 0.015);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.01);
+  animation: inline-create-slide-in 200ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes inline-create-slide-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.file-drawer__create-input {
+  flex: 1;
+  height: 22px;
+  padding: 0 var(--space-xs);
+  background: var(--color-canvas-soft);
+  border: 1.5px solid var(--color-accent-amber);
+  border-radius: var(--radius-sm);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  font-size: 12px;
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(212, 168, 87, 0.1);
+}
+
+/* ── Flat Search Results View ────────────────────────────────── */
+.file-drawer__search-results {
+  display: flex;
+  flex-direction: column;
+}
+
+.file-drawer__search-result-item {
+  display: flex;
+  align-items: center;
+  padding: 6px var(--space-lg);
+  cursor: pointer;
+  transition: background var(--transition-fast);
+}
+
+.file-drawer__search-result-item:hover {
+  background: var(--color-canvas-soft);
+}
+
+.file-drawer__search-result-details {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+}
+
+.file-drawer__search-result-name {
+  font-family: var(--font-sans);
+  font-size: var(--text-caption);
+  color: var(--color-ink);
+  font-weight: 500;
+  line-height: 1.4;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.file-drawer__search-result-path {
+  font-family: var(--font-sans);
+  font-size: 10px;
+  color: var(--color-mute);
+  line-height: 1.2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  margin-top: 1px;
 }
 
 .file-drawer--closed {
