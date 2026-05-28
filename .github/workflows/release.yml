@@ -39,7 +39,7 @@ jobs:
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
           tagName: ${{ github.ref_name }}
-          releaseName: 'Fit v__VERSION__'
+          releaseName: 'Fit v__VERSION__' 
           releaseDraft: false
           prerelease: false
           generateReleaseNotes: true
@@ -56,14 +56,11 @@ jobs:
 
           echo "=== Updating updater.json for version $VERSION ==="
 
-          # tauri-action ha già generato e caricato latest.json nella release.
-          # Lo scarichiamo e lo salviamo come updater.json sul ramo main.
-
           LATEST_URL="https://github.com/${{ github.repository }}/releases/download/$TAG_NAME/latest.json"
           echo "Downloading latest.json from: $LATEST_URL"
 
-          # Retry fino a 3 volte (la release potrebbe non essere subito raggiungibile)
-          for attempt in 1 2 3; do
+          # Retry up to 5 times with increasing delay
+          for attempt in 1 2 3 4 5; do
             curl -sL -o updater.json "$LATEST_URL"
 
             if [ -s updater.json ]; then
@@ -71,12 +68,12 @@ jobs:
               break
             fi
 
-            echo "Attempt $attempt failed. Waiting 15s..."
-            sleep 15
+            echo "Attempt $attempt failed. Waiting $((attempt * 10))s..."
+            sleep $((attempt * 10))
           done
 
           if [ ! -s updater.json ]; then
-            echo "ERROR: Failed to download latest.json after 3 attempts"
+            echo "ERROR: Failed to download latest.json after 5 attempts"
             exit 1
           fi
 
@@ -85,15 +82,24 @@ jobs:
           cat updater.json
           echo ""
 
-          # Commit e push di updater.json su main
+          # Configure git
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
 
-          git stash || true
+          # Switch to main branch
+          git fetch origin main
           git checkout main
           git pull origin main
-          git add updater.json
-          git commit -m "chore: auto-update updater.json to $VERSION [skip ci]" || true
-          git push origin main
 
-          echo "=== Done! updater.json v$VERSION pushed to main ==="
+          # Check if updater.json has actually changed
+          if git diff --quiet updater.json; then
+            echo "No changes to updater.json, skipping push."
+          else
+            git add updater.json
+            git commit -m "chore: auto-update updater.json to $VERSION [skip ci]"
+            
+            # Use GITHUB_TOKEN for push to handle potential permission issues
+            git push "https://${GITHUB_ACTOR}:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" main
+          fi
+
+          echo "=== Done! updater.json v$VERSION sync process complete ==="
