@@ -250,6 +250,13 @@ export function SettingsModal() {
       } else if (result.available) {
         setUpdateAvailable({ version: result.version, body: result.body });
         setUpdateStatus(t('settings.updater.available', { version: result.version }));
+        
+        // Automatically open the update modal
+        dispatch({ type: 'TOGGLE_SETTINGS' });
+        dispatch({
+          type: 'SET_PENDING_UPDATE',
+          payload: { version: result.version, body: result.body },
+        });
       } else {
         if (!silent) {
           setUpdateStatus(t('settings.latest'));
