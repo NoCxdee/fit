@@ -57,9 +57,12 @@ impl PtyManager {
         let mut cmd = CommandBuilder::new(&shell);
         cmd.cwd(&cwd);
 
-        // Suppress PowerShell banner for a clean startup
+        // Suppress PowerShell banner and enable prediction history inline if supported by PSReadLine
         if shell.contains("powershell") || shell.contains("pwsh") {
             cmd.arg("-NoLogo");
+            cmd.arg("-NoExit");
+            cmd.arg("-Command");
+            cmd.arg("if ((Get-Command Set-PSReadLineOption -ErrorAction SilentlyContinue).Parameters.ContainsKey('PredictionSource')) { Set-PSReadLineOption -PredictionSource History }");
         }
 
         let _child = pair
@@ -173,7 +176,7 @@ pub fn pty_spawn(
             pwsh_paths.iter()
                 .find(|p| std::path::Path::new(p).exists())
                 .map(|p| p.to_string())
-                .unwrap_or_else(|| "pwsh.exe".to_string())
+                .unwrap_or_else(|| r"C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe".to_string())
         }
         "cmd" => r"C:\Windows\System32\cmd.exe".to_string(),
         "wsl" => r"C:\Windows\System32\wsl.exe".to_string(),

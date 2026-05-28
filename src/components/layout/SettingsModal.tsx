@@ -165,6 +165,15 @@ export function SettingsModal() {
   const [updateStatus, setUpdateStatus] = useState<string | null>(null);
   const [updateAvailable, setUpdateAvailable] = useState<{ version: string; body?: string } | null>(null);
   const [downloading, setDownloading] = useState(false);
+  const statusTimeoutRef = useRef<any>(null);
+
+  useEffect(() => {
+    return () => {
+      if (statusTimeoutRef.current) {
+        clearTimeout(statusTimeoutRef.current);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     if (!settingsOpen) {
@@ -172,6 +181,9 @@ export function SettingsModal() {
       setUpdateAvailable(null);
       setCheckingUpdate(false);
       setDownloading(false);
+      if (statusTimeoutRef.current) {
+        clearTimeout(statusTimeoutRef.current);
+      }
     }
   }, [settingsOpen]);
 
@@ -209,11 +221,23 @@ export function SettingsModal() {
   };
 
   const handleCheckUpdate = async (silent = false) => {
+    if (statusTimeoutRef.current) {
+      clearTimeout(statusTimeoutRef.current);
+    }
     setCheckingUpdate(true);
     setUpdateStatus(null);
     setUpdateAvailable(null);
+    const startTime = Date.now();
     try {
       const result = await checkUpdate();
+      
+      // Enforce a minimum loader duration of 1800ms
+      const elapsed = Date.now() - startTime;
+      const minDuration = 1800;
+      if (elapsed < minDuration) {
+        await new Promise(resolve => setTimeout(resolve, minDuration - elapsed));
+      }
+
       if (result.error) {
         if (!silent) {
           setUpdateStatus(
@@ -226,7 +250,12 @@ export function SettingsModal() {
         setUpdateAvailable({ version: result.version, body: result.body });
         setUpdateStatus(t('settings.updater.available', { version: result.version }));
       } else {
-        if (!silent) setUpdateStatus(t('settings.latest'));
+        if (!silent) {
+          setUpdateStatus(t('settings.latest'));
+          statusTimeoutRef.current = setTimeout(() => {
+            setUpdateStatus(null);
+          }, 4000);
+        }
       }
     } catch (err) {
       console.error('Update check failed:', err);
@@ -338,25 +367,34 @@ export function SettingsModal() {
                     <span className="settings-row__desc">{t('settings.checkUpdatesDesc')}</span>
                   </div>
                   <button
-                    className="settings-check-btn"
+                    className={`settings-check-btn ${updateStatus === t('settings.latest') ? 'settings-check-btn--success' : ''} ${checkingUpdate ? 'settings-check-btn--loading' : ''}`}
                     onClick={() => handleCheckUpdate(false)}
                     disabled={checkingUpdate || downloading}
                   >
-                    {checkingUpdate ? (
-                      <span className="settings-check-btn__spinner" />
-                    ) : (
-                      <>
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M23 4v6h-6" />
-                          <path d="M1 20v-6h6" />
-                          <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
-                        </svg>
-                        {t('settings.checkNow')}
-                      </>
-                    )}
+                    <span key={checkingUpdate ? 'loading' : updateStatus === t('settings.latest') ? 'success' : 'idle'} className="settings-check-btn__inner-content">
+                      {checkingUpdate ? (
+                        <span className="settings-check-btn__spinner" />
+                      ) : updateStatus === t('settings.latest') ? (
+                        <>
+                          <svg className="settings-check-btn__success-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                            <polyline points="20 6 9 17 4 12" />
+                          </svg>
+                          <span>{t('settings.upToDate')}</span>
+                        </>
+                      ) : (
+                        <>
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M23 4v6h-6" />
+                            <path d="M1 20v-6h6" />
+                            <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
+                          </svg>
+                          <span>{t('settings.checkNow')}</span>
+                        </>
+                      )}
+                    </span>
                   </button>
                 </div>
-                {updateStatus && (
+                {updateStatus && updateStatus !== t('settings.latest') && (
                   <div className="settings-update-status">{updateStatus}</div>
                 )}
                 {updateAvailable && !downloading && (

@@ -16,6 +16,12 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Generate Release Notes
+        id: release_notes
+        uses: mikepenz/release-changelog-builder-action@v4
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
@@ -37,6 +43,7 @@ jobs:
           releaseDraft: false
           prerelease: false
           generateReleaseNotes: true
+          releaseBody: ${{ steps.release_notes.outputs.changelog }}
           updaterJsonPreferNsis: true
 
       - name: Download latest.json and push as updater.json

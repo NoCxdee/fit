@@ -37,7 +37,7 @@ function appReducer(state: AppState, action: AppAction): AppState {
         name: 'session 1',
         terminals: [{
           id: generateId('term'),
-          shell: 'powershell',
+          shell: 'powershell-core',
           cwd: action.payload.path,
         }],
         splitDirection: 'horizontal' as const,
@@ -87,7 +87,7 @@ function appReducer(state: AppState, action: AppAction): AppState {
           name: 'session 1',
           terminals: [{
             id: generateId('term'),
-            shell: 'powershell',
+            shell: 'powershell-core',
             cwd: workspace?.path || '',
           }],
           splitDirection: 'horizontal' as const,
@@ -148,7 +148,7 @@ function appReducer(state: AppState, action: AppAction): AppState {
               name: 'session 1',
               terminals: [{
                 id: generateId('term'),
-                shell: 'powershell',
+                shell: 'powershell-core',
                 cwd: ws?.path || '',
               }],
               splitDirection: 'horizontal' as const,

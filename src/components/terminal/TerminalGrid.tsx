@@ -30,7 +30,7 @@ export function TerminalGrid({ sessionId }: TerminalGridProps) {
         sessionId,
         terminal: {
           id: generateId('term'),
-          shell: 'powershell',
+          shell: 'powershell-core',
           cwd: '',
         },
       },

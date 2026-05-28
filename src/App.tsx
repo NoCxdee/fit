@@ -191,7 +191,7 @@ export function App() {
           name,
           terminals: [{
             id: generateId('term'),
-            shell: 'powershell',
+            shell: 'powershell-core',
             cwd: activeWorkspace ? activeWorkspace.path : '',
           }],
           splitDirection: 'horizontal' as const,

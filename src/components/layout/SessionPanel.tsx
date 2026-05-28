@@ -93,7 +93,7 @@ export function SessionPanel() {
       name,
       terminals: [{
         id: generateId('term'),
-        shell: 'powershell',
+        shell: 'powershell-core',
         cwd: activeWorkspace.path,
       }],
       splitDirection: 'horizontal',
