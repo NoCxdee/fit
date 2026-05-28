@@ -73,7 +73,7 @@ export function UpdateModal() {
           </div>
           <div className="update-modal__header-info">
             <h1 className="update-modal__title">{t('settings.updater.available', { version: pendingUpdate.version })}</h1>
-            <p className="update-modal__subtitle">A new version of Fit is available for download.</p>
+            <p className="update-modal__subtitle">{t('settings.updater.subtitle')}</p>
             <div className="update-modal__version-badges">
               <span className="update-modal__badge update-modal__badge--current">v{packageInfo.version}</span>
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="update-modal__badge-arrow">
@@ -88,7 +88,7 @@ export function UpdateModal() {
         {/* Release Notes */}
         {pendingUpdate.body && (
           <div className="update-modal__notes-container">
-            <span className="update-modal__notes-title">RELEASE NOTES</span>
+            <span className="update-modal__notes-title">{t('settings.updater.releaseNotes')}</span>
             <div className="update-modal__notes-content">
               {formatReleaseNotes(pendingUpdate.body)}
             </div>
@@ -98,7 +98,7 @@ export function UpdateModal() {
         {/* Status / Error */}
         {error && (
           <div className="update-modal__error">
-            <span className="update-modal__error-title">Installation Error</span>
+            <span className="update-modal__error-title">{t('settings.updater.errorTitle')}</span>
             <p className="update-modal__error-text">{error}</p>
           </div>
         )}

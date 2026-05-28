@@ -4,12 +4,14 @@
 
 import { useState, useCallback, useRef } from 'react';
 import { useAppState, useAppDispatch } from '../../stores/appStore';
+import { useTranslation } from '../../i18n';
 import { ResizeHandle } from './ResizeHandle';
 import { DiffView } from '../editor/DiffView';
 
 export function DiffSidebar() {
   const { diffFilePath, panelSizes, diffSidebarOpen } = useAppState();
   const dispatch = useAppDispatch();
+  const { t } = useTranslation();
 
   const [sidebarWidth, setSidebarWidth] = useState<number>(
     (panelSizes || {})['diffSidebar']?.[0] ?? 450
@@ -67,11 +69,11 @@ export function DiffSidebar() {
       
       {/* Sidebar Header */}
       <div className="diff-sidebar__header">
-        <span className="diff-sidebar__title">Review Changes</span>
+        <span className="diff-sidebar__title">{t('diff.reviewChanges')}</span>
         <button 
           onClick={handleClose}
           className="diff-sidebar__close-btn"
-          title="Close Diff Panel"
+          title={t('diff.closePanel')}
         >
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
             <line x1="18" y1="6" x2="6" y2="18" />

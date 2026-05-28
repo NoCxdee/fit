@@ -34,17 +34,17 @@ export function AboutModal() {
         {/* Details Table */}
         <div className="about-modal__details">
           <div className="about-modal__row">
-            <span className="about-modal__label">Build</span>
+            <span className="about-modal__label">{t('about.build')}</span>
             <span className="about-modal__value">Windows &middot; x86_64 &middot; v1.0.0</span>
           </div>
 
           <div className="about-modal__row">
-            <span className="about-modal__label">Bundle ID</span>
+            <span className="about-modal__label">{t('about.bundleId')}</span>
             <span className="about-modal__value font-mono">app.fit.desktop</span>
           </div>
 
           <div className="about-modal__row">
-            <span className="about-modal__label">Website</span>
+            <span className="about-modal__label">{t('about.website')}</span>
             <span className="about-modal__value">
               <a href="https://fit.app" target="_blank" rel="noopener noreferrer" className="about-modal__link">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '6px', verticalAlign: 'middle' }}>

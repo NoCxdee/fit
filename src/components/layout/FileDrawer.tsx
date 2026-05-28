@@ -814,9 +814,9 @@ export function FileDrawer() {
   const totalChanges = activeWorkspace && status?.isRepo ? (status.staged.length + status.unstaged.length) : 0;
   const changesText = activeWorkspace && status?.isRepo
     ? totalChanges === 1
-      ? '1 Change'
-      : `${totalChanges} Changes`
-    : 'Changes';
+      ? t('drawer.tab.git.change')
+      : t('drawer.tab.git.changes_plural', { count: totalChanges })
+    : t('drawer.tab.git.changes');
 
   return (
     <div 
@@ -840,7 +840,7 @@ export function FileDrawer() {
           className={`file-drawer__top-tab ${drawerTab === 'files' ? 'file-drawer__top-tab--active' : ''}`}
           onClick={() => dispatch({ type: 'SET_DRAWER_TAB', payload: 'files' })}
         >
-          All files
+          {t('drawer.allFiles')}
         </button>
       </div>
 
@@ -858,28 +858,28 @@ export function FileDrawer() {
                     <button 
                       className="file-drawer__action-btn" 
                       onClick={handleFocusSearch} 
-                      title={t('drawer.search') || 'Search files'}
+                      title={t('drawer.search')}
                     >
                       <Search size={14} />
                     </button>
                     <button 
                       className="file-drawer__action-btn" 
                       onClick={() => { cancelCreate(); setIsAddingFile(true); }} 
-                      title={t('drawer.newFile') || 'New File'}
+                      title={t('drawer.newFile')}
                     >
                       <FilePlus2 size={14} />
                     </button>
                     <button 
                       className="file-drawer__action-btn" 
                       onClick={() => { cancelCreate(); setIsAddingFolder(true); }} 
-                      title={t('drawer.newFolder') || 'New Folder'}
+                      title={t('drawer.newFolder')}
                     >
                       <FolderPlus size={14} />
                     </button>
                     <button 
                       className="file-drawer__action-btn" 
                       onClick={() => { refreshFiles(); refreshGit(); }} 
-                      title={t('drawer.refresh') || 'Refresh'}
+                      title={t('drawer.refresh')}
                     >
                       <RotateCw size={14} />
                     </button>
@@ -892,7 +892,7 @@ export function FileDrawer() {
                     ref={searchInputRef}
                     className="file-drawer__search-input"
                     type="text"
-                    placeholder={t('drawer.searchPlaceholder') || 'Search files'}
+                    placeholder={t('drawer.searchPlaceholder')}
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                   />
@@ -927,7 +927,7 @@ export function FileDrawer() {
                       color: 'var(--color-mute)',
                       fontSize: 'var(--text-caption)',
                     }}>
-                      {t('drawer.searching') || 'Searching...'}
+                      {t('drawer.searching')}
                     </p>
                   ) : searchResults.length === 0 ? (
                     <p style={{
@@ -935,7 +935,7 @@ export function FileDrawer() {
                       color: 'var(--color-mute)',
                       fontSize: 'var(--text-caption)',
                     }}>
-                      {t('drawer.noResults') || 'No files match your query.'}
+                      {t('drawer.noResults')}
                     </p>
                   ) : (
                     <div className="file-drawer__search-results">
@@ -966,7 +966,7 @@ export function FileDrawer() {
                                 marginRight: '8px',
                               }}
                             >
-                              {entry.isDir ? <FolderClosedIcon /> : icon?.icon}
+                               {entry.isDir ? <FolderClosedIcon /> : icon?.icon}
                             </span>
                             <div className="file-drawer__search-result-details">
                               <span className="file-drawer__search-result-name">{entry.name}</span>
@@ -1006,7 +1006,7 @@ export function FileDrawer() {
                       <input
                         className="file-drawer__create-input"
                         type="text"
-                        placeholder={isAddingFile ? 'New file' : 'New folder'}
+                        placeholder={isAddingFile ? t('drawer.newFilePlaceholder') : t('drawer.newFolderPlaceholder')}
                         value={newItemName}
                         onChange={(e) => setNewItemName(e.target.value)}
                         onBlur={handleCreateItemSubmit}

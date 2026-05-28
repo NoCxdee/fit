@@ -260,7 +260,7 @@ export function SettingsModal() {
       }
     } catch (err) {
       console.error('Update check failed:', err);
-      if (!silent) setUpdateStatus('Check failed');
+      if (!silent) setUpdateStatus(t('settings.updater.failed'));
     } finally {
       setCheckingUpdate(false);
     }
@@ -404,7 +404,7 @@ export function SettingsModal() {
                     onClick={handleOpenUpdateModal}
                     style={{ marginTop: 'var(--space-sm)', alignSelf: 'flex-start' }}
                   >
-                    {t('settings.updater.view') || 'View Update'}
+                    {t('settings.updater.view')}
                   </button>
                 )}
               </section>

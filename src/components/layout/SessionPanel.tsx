@@ -85,7 +85,7 @@ export function SessionPanel() {
     if (!activeWorkspaceId) return;
 
     const num = workspaceSessions.length + 1;
-    const name = `session ${num}`;
+    const name = t('session.defaultName', { number: num });
 
     const session: Session = {
       id: generateId('session'),
