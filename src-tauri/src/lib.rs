@@ -60,6 +60,7 @@ pub fn run() {
             commands::git::git_fetch,
             commands::git::git_show_file,
             commands::git::git_discard_file,
+            commands::clipboard::get_clipboard_files,
         ])
         .run(tauri::generate_context!())
         .expect("error while running Fit");

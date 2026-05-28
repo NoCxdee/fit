@@ -7,7 +7,7 @@ import { Terminal } from '@xterm/xterm';
 import { FitAddon } from '@xterm/addon-fit';
 import { WebglAddon } from '@xterm/addon-webgl';
 import { listen } from '@tauri-apps/api/event';
-import { ptySpawn, ptyWrite, ptyResize, ptyKill } from '../../utils/ipc';
+import { ptySpawn, ptyWrite, ptyResize, ptyKill, getClipboardFiles } from '../../utils/ipc';
 import { useAppState, useAppDispatch } from '../../stores/appStore';
 import { useTranslation } from '../../i18n';
 import '@xterm/xterm/css/xterm.css';
@@ -72,6 +72,39 @@ export function TerminalInstance({ terminalId, shell }: TerminalInstanceProps) {
     term.loadAddon(fitAddon);
     
     term.open(containerRef.current);
+
+    const handleClipboardPaste = async () => {
+      try {
+        const files = await getClipboardFiles();
+        if (files && files.length > 0) {
+          const formatted = files.map(f => `"${f}"`).join(', ');
+          await ptyWrite(terminalId, formatted);
+        } else {
+          const text = await navigator.clipboard.readText();
+          if (text) {
+            await ptyWrite(terminalId, text);
+          }
+        }
+      } catch (err) {
+        console.error('Failed to parse clipboard files:', err);
+        try {
+          const text = await navigator.clipboard.readText();
+          if (text) {
+            await ptyWrite(terminalId, text);
+          }
+        } catch (clipErr) {
+          console.error('Clipboard text fallback failed:', clipErr);
+        }
+      }
+    };
+
+    term.attachCustomKeyEventHandler((e) => {
+      if (e.type === 'keydown' && e.key === 'v' && (e.ctrlKey || e.metaKey)) {
+        handleClipboardPaste();
+        return false;
+      }
+      return true;
+    });
 
     if (useWebGl) {
       try {

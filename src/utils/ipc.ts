@@ -167,3 +167,12 @@ export async function searchFiles(path: string, query: string): Promise<FileEntr
   }
 }
 
+export async function getClipboardFiles(): Promise<string[] | null> {
+  try {
+    return await invoke<string[] | null>('get_clipboard_files');
+  } catch (error) {
+    console.error('IPC getClipboardFiles error:', error);
+    return null;
+  }
+}
+

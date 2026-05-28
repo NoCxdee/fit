@@ -28,6 +28,7 @@ tokio = { version = "1", features = ["full"] }
 portable-pty = "0.8"
 dirs = "6"
 uuid = { version = "1", features = ["v4"] }
+windows-sys = { version = "0.52", features = ["Win32_Foundation", "Win32_System_DataExchange", "Win32_System_Memory", "Win32_UI_Shell"] }
 
 [profile.release]
 panic = "abort"
