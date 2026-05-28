@@ -2,7 +2,7 @@
   <img src="public/fit_new_logo.png" width="96" alt="Fit Logo" />
 
   # Fit
-  *The Ultra-Lightweight, Warp-Inspired Agentic Development Workspace*
+  *The Ultra-Lightweight - Agentic Development Workspace*
 
   [![License](https://img.shields.io/badge/License-MIT-success?style=flat-square)](LICENSE)
   [![RAM](https://img.shields.io/badge/RAM-~10_MB-blue?style=flat-square)](https://tauri.app/)
