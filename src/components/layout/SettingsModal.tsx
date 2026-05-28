@@ -7,6 +7,7 @@ import { createPortal } from 'react-dom';
 import { useAppState, useAppDispatch } from '../../stores/appStore';
 import { useTranslation, type Lang } from '../../i18n';
 import { checkUpdate, installUpdate } from '../../utils/ipc';
+import packageInfo from '../../../package.json';
 
 function Toggle({ checked, onChange }: { checked: boolean; onChange: () => void }) {
   return (
@@ -315,7 +316,7 @@ export function SettingsModal() {
 
           <div className="settings-sidebar__bottom">
             <span className="settings-sidebar__app-name">{t('settings.desktop')}</span>
-            <span className="settings-sidebar__version">{t('settings.version')}</span>
+            <span className="settings-sidebar__version">v{packageInfo.version}</span>
           </div>
         </aside>
 
