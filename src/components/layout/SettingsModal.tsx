@@ -258,23 +258,23 @@ export function SettingsModal() {
       e.preventDefault();
       e.stopPropagation();
 
+      // Ignore if only a modifier key is pressed (wait for the main key)
+      if (['Control', 'Shift', 'Alt', 'Meta'].includes(e.key)) {
+        return;
+      }
+
       const keys: string[] = [];
       if (e.ctrlKey) keys.push('Control');
       if (e.shiftKey) keys.push('Shift');
       if (e.altKey) keys.push('Alt');
       if (e.metaKey) keys.push('Meta');
 
-      // Filter out modifier names from e.key
-      if (!['Control', 'Shift', 'Alt', 'Meta'].includes(e.key)) {
-        const keyName = e.key === ' ' ? 'Space' : e.key;
-        keys.push(keyName);
-      }
+      const keyName = e.key === ' ' ? 'Space' : e.key;
+      keys.push(keyName);
 
-      if (keys.length > 0) {
-        const binding = keys.join('+');
-        dispatch({ type: 'SET_STT_SHORTCUT', payload: binding });
-        setIsShortcutBinding(false);
-      }
+      const binding = keys.join('+');
+      dispatch({ type: 'SET_STT_SHORTCUT', payload: binding });
+      setIsShortcutBinding(false);
     };
 
     window.addEventListener('keydown', handleKeyDown, true);

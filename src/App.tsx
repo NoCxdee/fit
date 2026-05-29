@@ -159,6 +159,9 @@ export function App() {
       const bufferLength = analyser.frequencyBinCount;
       const dataArray = new Uint8Array(bufferLength);
 
+      // Interpolation state for smooth motion design
+      let smoothedVolume = 0;
+
       const updateVolume = () => {
         if (!isRecordingRef.current) return;
         analyser.getByteFrequencyData(dataArray);
@@ -169,7 +172,7 @@ export function App() {
         const average = sum / bufferLength;
         
         // Noise gate: ignore very low average levels to prevent background noise from moving the bars
-        const NOISE_FLOOR = 8;
+        const NOISE_FLOOR = 2; // Lowered to pick up standard mics easily
         let effectiveAverage = average;
         if (average < NOISE_FLOOR) {
           effectiveAverage = 0;
@@ -178,9 +181,21 @@ export function App() {
           effectiveAverage = ((average - NOISE_FLOOR) / (255 - NOISE_FLOOR)) * 255;
         }
 
-        // Amplify the volume level slightly and clamp to 0-100, then adjust by gain slider
-        const vol = Math.min(100, Math.round((effectiveAverage / 128) * 100 * sttVolume));
-        setSttVolumeLevel(vol);
+        // Target volume: Amplify slightly and clamp to 0-100
+        // (Removed sttVolume multiplier since slider is gone and might be stuck at 0)
+        const targetVol = Math.min(100, (effectiveAverage / 64) * 100);
+
+        // Motion Design: Fast attack, smooth slow decay for audio bars
+        if (targetVol > smoothedVolume) {
+          smoothedVolume += (targetVol - smoothedVolume) * 0.6; // Quick rise
+        } else {
+          smoothedVolume += (targetVol - smoothedVolume) * 0.12; // Premium smooth fall
+        }
+
+        // Ensure we don't dispatch infinitely small decimals, and snap to 0 cleanly
+        if (smoothedVolume < 0.5) smoothedVolume = 0;
+
+        setSttVolumeLevel(Math.round(smoothedVolume));
         animationFrameRef.current = requestAnimationFrame(updateVolume);
       };
       animationFrameRef.current = requestAnimationFrame(updateVolume);
@@ -195,7 +210,9 @@ export function App() {
         const recognition = new SpeechRecognition();
         recognition.continuous = true;
         recognition.interimResults = true;
-        recognition.lang = lang === 'it' ? 'it-IT' : lang === 'de' ? 'de-DE' : lang === 'es' ? 'es-ES' : lang === 'fr' ? 'fr-FR' : 'en-US';
+        // Removing explicit recognition.lang assignment.
+        // This allows the native OS speech engine to use its global/multilingual dictation settings
+        // instead of forcing it to strictly match the UI language, which was causing hallucinations.
 
         let speechResultReceived = false;
         let finalTranscript = '';
