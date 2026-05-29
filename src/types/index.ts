@@ -123,6 +123,14 @@ export interface AppState {
   pendingUpdate: { version: string; body?: string } | null;
   diffSidebarOpen: boolean;
   diffFilePath: string | null;
+  sttShortcut: string;
+  sttMicId: string;
+  sttVolume: number;
+  sttPushToTalk: boolean;
+  sttAutoUnload: 'immediate' | '5min' | '10min' | 'never';
+  sttOverlayPos: 'bottom' | 'top' | 'center' | 'none';
+  sttPasteMethod: 'clipboard' | 'direct' | 'none';
+  sttMuteSystem: boolean;
 }
 
 export type AppAction =
@@ -155,4 +163,13 @@ export type AppAction =
   | { type: 'SET_DIFF_SIDEBAR_OPEN'; payload: boolean }
   | { type: 'SET_DIFF_FILE_PATH'; payload: string | null }
   | { type: 'SET_PANEL_SIZES'; payload: { key: string; sizes: number[] } }
+  | { type: 'SET_STT_SHORTCUT'; payload: string }
+  | { type: 'SET_STT_MIC_ID'; payload: string }
+  | { type: 'SET_STT_VOLUME'; payload: number }
+  | { type: 'SET_STT_PUSH_TO_TALK'; payload: boolean }
+  | { type: 'SET_STT_AUTO_UNLOAD'; payload: 'immediate' | '5min' | '10min' | 'never' }
+  | { type: 'SET_STT_OVERLAY_POS'; payload: 'bottom' | 'top' | 'center' | 'none' }
+  | { type: 'SET_STT_PASTE_METHOD'; payload: 'clipboard' | 'direct' | 'none' }
+  | { type: 'SET_STT_MUTE_SYSTEM'; payload: boolean }
   | { type: 'LOAD_STATE'; payload: AppState };
+

@@ -57,11 +57,41 @@ interface CodeEditorProps {
 export function CodeEditor({ filePath, fileName, tabId }: CodeEditorProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
-  const { activeWorkspaceId, workspaces } = useAppState();
+  const { activeWorkspaceId, workspaces, activeTabId } = useAppState();
   const dispatch = useAppDispatch();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [content, setContent] = useState<string | null>(null);
+
+  // Listen to Speech-to-Text transcription event
+  useEffect(() => {
+    const handleTranscription = (e: Event) => {
+      const customEvent = e as CustomEvent<{ text: string }>;
+      const activeEl = document.activeElement;
+      const isFocused = (activeEl instanceof Node && containerRef.current?.contains(activeEl)) || 
+                        (e.target instanceof Node && containerRef.current?.contains(e.target));
+      const isTarget = isFocused && (activeTabId === tabId);
+      console.log('[STT CodeEditor] Received transcription event. viewRef.current exists:', !!viewRef.current, 'isTarget:', isTarget, 'activeTabId:', activeTabId, 'tabId:', tabId);
+      if (viewRef.current && isTarget) {
+        const text = customEvent.detail.text;
+        console.log('[STT CodeEditor] Pasting text directly to editor:', text);
+        const transaction = viewRef.current.state.update({
+          changes: {
+            from: viewRef.current.state.selection.main.from,
+            to: viewRef.current.state.selection.main.to,
+            insert: text
+          },
+          selection: { anchor: viewRef.current.state.selection.main.from + text.length },
+          scrollIntoView: true,
+          userEvent: 'input.type'
+        });
+        viewRef.current.dispatch(transaction);
+        viewRef.current.focus();
+      }
+    };
+    window.addEventListener('fit-speech-transcription', handleTranscription);
+    return () => window.removeEventListener('fit-speech-transcription', handleTranscription);
+  }, [tabId, activeTabId]);
 
   // Load content from file system
   const originalContentRef = useRef<string>('');

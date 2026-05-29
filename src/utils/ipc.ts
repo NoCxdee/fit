@@ -176,3 +176,28 @@ export async function getClipboardFiles(): Promise<string[] | null> {
   }
 }
 
+export async function getModelStatus(): Promise<{ downloaded: boolean; loaded: boolean; sizeBytes: number; path: string }> {
+  return await invoke<{ downloaded: boolean; loaded: boolean; sizeBytes: number; path: string }>('get_model_status');
+}
+
+export async function downloadModel(): Promise<void> {
+  return await invoke<void>('download_model');
+}
+
+export async function deleteModel(): Promise<void> {
+  return await invoke<void>('delete_model');
+}
+
+export async function loadModel(): Promise<void> {
+  return await invoke<void>('load_model');
+}
+
+export async function unloadModel(): Promise<void> {
+  return await invoke<void>('unload_model');
+}
+
+export async function setSystemMute(mute: boolean): Promise<void> {
+  return await invoke<void>('set_system_mute', { mute });
+}
+
+

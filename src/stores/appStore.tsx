@@ -25,6 +25,14 @@ const initialState: AppState = {
   pendingUpdate: null,
   diffSidebarOpen: false,
   diffFilePath: null,
+  sttShortcut: 'Control+Space',
+  sttMicId: 'default',
+  sttVolume: 1,
+  sttPushToTalk: false,
+  sttAutoUnload: 'never',
+  sttOverlayPos: 'bottom',
+  sttPasteMethod: 'direct',
+  sttMuteSystem: false,
 };
 
 // ── Reducer ──────────────────────────────────────────────────────
@@ -454,6 +462,54 @@ function appReducer(state: AppState, action: AppAction): AppState {
         panelSizes: { ...state.panelSizes, [action.payload.key]: action.payload.sizes },
       };
 
+    case 'SET_STT_SHORTCUT':
+      return {
+        ...state,
+        sttShortcut: action.payload,
+      };
+
+    case 'SET_STT_MIC_ID':
+      return {
+        ...state,
+        sttMicId: action.payload,
+      };
+
+    case 'SET_STT_VOLUME':
+      return {
+        ...state,
+        sttVolume: action.payload,
+      };
+
+    case 'SET_STT_PUSH_TO_TALK':
+      return {
+        ...state,
+        sttPushToTalk: action.payload,
+      };
+
+    case 'SET_STT_AUTO_UNLOAD':
+      return {
+        ...state,
+        sttAutoUnload: action.payload,
+      };
+
+    case 'SET_STT_OVERLAY_POS':
+      return {
+        ...state,
+        sttOverlayPos: action.payload,
+      };
+
+    case 'SET_STT_PASTE_METHOD':
+      return {
+        ...state,
+        sttPasteMethod: action.payload,
+      };
+
+    case 'SET_STT_MUTE_SYSTEM':
+      return {
+        ...state,
+        sttMuteSystem: action.payload,
+      };
+
     case 'LOAD_STATE': {
       const loadedTabs = action.payload.openTabs || [];
       const migratedTabs = loadedTabs.map(t => {
@@ -488,6 +544,14 @@ function appReducer(state: AppState, action: AppAction): AppState {
         diffSidebarOpen: false,
         diffFilePath: null,
         panelSizes: action.payload.panelSizes || {},
+        sttShortcut: action.payload.sttShortcut || 'Control+Space',
+        sttMicId: action.payload.sttMicId || 'default',
+        sttVolume: action.payload.sttVolume !== undefined ? action.payload.sttVolume : 1,
+        sttPushToTalk: action.payload.sttPushToTalk !== undefined ? action.payload.sttPushToTalk : false,
+        sttAutoUnload: action.payload.sttAutoUnload || 'never',
+        sttOverlayPos: action.payload.sttOverlayPos || 'bottom',
+        sttPasteMethod: action.payload.sttPasteMethod || 'direct',
+        sttMuteSystem: action.payload.sttMuteSystem !== undefined ? action.payload.sttMuteSystem : false,
       };
     }
 

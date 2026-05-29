@@ -9,3 +9,4 @@ pub mod shell;
 pub mod state;
 pub mod git;
 pub mod clipboard;
+pub mod speech;

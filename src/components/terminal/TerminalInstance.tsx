@@ -285,6 +285,24 @@ export function TerminalInstance({ terminalId, shell }: TerminalInstanceProps) {
     }
   }, [useWebGl, isReady]);
 
+  // Listen to Speech-to-Text transcription event
+  useEffect(() => {
+    const handleTranscription = (e: Event) => {
+      const customEvent = e as CustomEvent<{ text: string }>;
+      const activeEl = document.activeElement;
+      const isFocused = (activeEl instanceof Node && containerRef.current?.contains(activeEl)) || 
+                        (e.target instanceof Node && containerRef.current?.contains(e.target));
+      console.log('[STT Terminal] Received transcription event. terminalId:', terminalId, 'isReady:', isReady, 'isFocused:', isFocused);
+      if (isFocused && termRef.current && isReady) {
+        const text = customEvent.detail.text;
+        console.log('[STT Terminal] Writing text to PTY:', text);
+        ptyWrite(terminalId, text).catch(console.error);
+      }
+    };
+    window.addEventListener('fit-speech-transcription', handleTranscription);
+    return () => window.removeEventListener('fit-speech-transcription', handleTranscription);
+  }, [terminalId, isReady]);
+
   const handleClose = () => {
     if (activeSessionId) {
       dispatch({

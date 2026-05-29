@@ -61,6 +61,13 @@ pub fn run() {
             commands::git::git_show_file,
             commands::git::git_discard_file,
             commands::clipboard::get_clipboard_files,
+            // Speech
+            commands::speech::get_model_status,
+            commands::speech::download_model,
+            commands::speech::delete_model,
+            commands::speech::load_model,
+            commands::speech::unload_model,
+            commands::speech::set_system_mute,
         ])
         .run(tauri::generate_context!())
         .expect("error while running Fit");

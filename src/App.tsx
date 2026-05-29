@@ -15,8 +15,10 @@ import { AboutModal } from './components/layout/AboutModal';
 import { UpdateModal } from './components/layout/UpdateModal';
 import { WelcomeScreen } from './components/layout/WelcomeScreen';
 import { Loader } from './components/layout/Loader';
+import { SpeechOverlay } from './components/layout/SpeechOverlay';
 import { useAppState, useAppDispatch } from './stores/appStore';
-import { loadState, saveState, gitStatus, checkUpdate } from './utils/ipc';
+import { useTranslation } from './i18n';
+import { loadState, saveState, gitStatus, checkUpdate, getModelStatus, loadModel, unloadModel, setSystemMute } from './utils/ipc';
 import { generateId } from './utils/generateId';
 
 export function App() {
@@ -25,6 +27,437 @@ export function App() {
   const initialized = useRef(false);
   const lastStateRef = useRef(state);
   const [showLoader, setShowLoader] = useState(true);
+
+  const { lang } = useTranslation();
+  const { 
+    sttShortcut, sttMicId, sttVolume, sttPushToTalk, settingsOpen,
+    sttAutoUnload, sttOverlayPos, sttPasteMethod, sttMuteSystem
+  } = state;
+
+  const [sttStatus, setSttStatus] = useState<'listening' | 'transcribing' | 'error' | null>(null);
+  const [sttVolumeLevel, setSttVolumeLevel] = useState<number>(0);
+  const [sttErrorMsg, setSttErrorMsg] = useState<string>('');
+
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const audioStreamRef = useRef<MediaStream | null>(null);
+  const analyserRef = useRef<AnalyserNode | null>(null);
+  const animationFrameRef = useRef<number | null>(null);
+  const recognitionRef = useRef<any>(null);
+  const isRecordingRef = useRef<boolean>(false);
+  const unloadTimeoutRef = useRef<any>(null);
+  const sttTimeoutRef = useRef<any>(null);
+  const lastRecognizedTextRef = useRef<string>('');
+  const lastActiveElementRef = useRef<Element | null>(null);
+
+  const matchShortcut = (e: KeyboardEvent, shortcutStr: string): boolean => {
+    const parts = shortcutStr.split('+');
+    const key = parts[parts.length - 1]; // e.g. "Space" or "a"
+    const needsCtrl = parts.includes('Control');
+    const needsShift = parts.includes('Shift');
+    const needsAlt = parts.includes('Alt');
+    const needsMeta = parts.includes('Meta');
+
+    const actualKey = e.key === ' ' ? 'Space' : e.key;
+
+    return (
+      actualKey.toLowerCase() === key.toLowerCase() &&
+      e.ctrlKey === needsCtrl &&
+      e.shiftKey === needsShift &&
+      e.altKey === needsAlt &&
+      e.metaKey === needsMeta
+    );
+  };
+
+  const handleAutoUnload = () => {
+    if (unloadTimeoutRef.current) {
+      clearTimeout(unloadTimeoutRef.current);
+      unloadTimeoutRef.current = null;
+    }
+    
+    if (sttAutoUnload === 'immediate') {
+      unloadModel().catch(console.error);
+    } else if (sttAutoUnload === '5min') {
+      unloadTimeoutRef.current = setTimeout(() => {
+        unloadModel().catch(console.error);
+      }, 5 * 60 * 1000);
+    } else if (sttAutoUnload === '10min') {
+      unloadTimeoutRef.current = setTimeout(() => {
+        unloadModel().catch(console.error);
+      }, 10 * 60 * 1000);
+    }
+  };
+
+  const startRecording = async () => {
+    if (isRecordingRef.current) return;
+    if (sttStatus === 'transcribing') return;
+
+    if (sttTimeoutRef.current) {
+      clearTimeout(sttTimeoutRef.current);
+      sttTimeoutRef.current = null;
+    }
+
+    if (unloadTimeoutRef.current) {
+      clearTimeout(unloadTimeoutRef.current);
+      unloadTimeoutRef.current = null;
+    }
+
+    // Check if model is downloaded first
+    try {
+      const status = await getModelStatus();
+      if (!status.downloaded) {
+        setSttErrorMsg(lang === 'it' ? 'Scarica Parakeet V3 nelle Impostazioni!' : 'Download Parakeet V3 in Settings!');
+        setSttStatus('error');
+        sttTimeoutRef.current = setTimeout(() => setSttStatus(null), 4000);
+        // Automatically open settings to the Speech tab!
+        if (!settingsOpen) {
+          dispatch({ type: 'TOGGLE_SETTINGS' });
+        }
+        return;
+      }
+      
+      // Auto-load model if not loaded
+      if (!status.loaded) {
+        await loadModel();
+      }
+    } catch (e) {
+      console.error('Failed to check/load model status:', e);
+    }
+
+    lastRecognizedTextRef.current = '';
+    lastActiveElementRef.current = document.activeElement;
+    isRecordingRef.current = true;
+    setSttStatus('listening');
+    setSttVolumeLevel(0);
+
+    // Mute system volume if enabled
+    if (sttMuteSystem) {
+      setSystemMute(true).catch(console.error);
+    }
+
+    // 1. Audio Level Visualizer setup
+    try {
+      const constraints: MediaStreamConstraints = {
+        audio: {
+          ...(sttMicId !== 'default' ? { deviceId: { exact: sttMicId } } : {}),
+          noiseSuppression: true,
+          echoCancellation: true,
+          autoGainControl: true
+        }
+      };
+      const stream = await navigator.mediaDevices.getUserMedia(constraints);
+      audioStreamRef.current = stream;
+
+      const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+      audioContextRef.current = audioCtx;
+
+      const source = audioCtx.createMediaStreamSource(stream);
+      const analyser = audioCtx.createAnalyser();
+      analyser.fftSize = 64;
+      source.connect(analyser);
+      analyserRef.current = analyser;
+
+      const bufferLength = analyser.frequencyBinCount;
+      const dataArray = new Uint8Array(bufferLength);
+
+      const updateVolume = () => {
+        if (!isRecordingRef.current) return;
+        analyser.getByteFrequencyData(dataArray);
+        let sum = 0;
+        for (let i = 0; i < bufferLength; i++) {
+          sum += dataArray[i];
+        }
+        const average = sum / bufferLength;
+        
+        // Noise gate: ignore very low average levels to prevent background noise from moving the bars
+        const NOISE_FLOOR = 8;
+        let effectiveAverage = average;
+        if (average < NOISE_FLOOR) {
+          effectiveAverage = 0;
+        } else {
+          // Normalize so it scales smoothly from 0 after the noise floor
+          effectiveAverage = ((average - NOISE_FLOOR) / (255 - NOISE_FLOOR)) * 255;
+        }
+
+        // Amplify the volume level slightly and clamp to 0-100, then adjust by gain slider
+        const vol = Math.min(100, Math.round((effectiveAverage / 128) * 100 * sttVolume));
+        setSttVolumeLevel(vol);
+        animationFrameRef.current = requestAnimationFrame(updateVolume);
+      };
+      animationFrameRef.current = requestAnimationFrame(updateVolume);
+    } catch (err) {
+      console.warn('Microphone access denied or failed:', err);
+    }
+
+    // 2. Speech recognition setup
+    try {
+      const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+      if (SpeechRecognition) {
+        const recognition = new SpeechRecognition();
+        recognition.continuous = true;
+        recognition.interimResults = true;
+        recognition.lang = lang === 'it' ? 'it-IT' : lang === 'de' ? 'de-DE' : lang === 'es' ? 'es-ES' : lang === 'fr' ? 'fr-FR' : 'en-US';
+
+        let speechResultReceived = false;
+        let finalTranscript = '';
+
+        recognition.onresult = (event: any) => {
+          let interimTranscript = '';
+          for (let i = event.resultIndex; i < event.results.length; ++i) {
+            if (event.results[i].isFinal) {
+              finalTranscript += event.results[i][0].transcript + ' ';
+            } else {
+              interimTranscript += event.results[i][0].transcript;
+            }
+          }
+          const text = (finalTranscript + interimTranscript).trim();
+          if (text) {
+            lastRecognizedTextRef.current = text;
+            speechResultReceived = true;
+          }
+        };
+
+        recognition.onerror = (e: any) => {
+          console.warn('Speech recognition error event:', e);
+        };
+
+        recognition.onend = () => {
+          // If the API ended automatically (e.g., silence timeout or 7-8s limit) but user is still recording,
+          // we must restart the recognition to allow continuous long dictation.
+          if (isRecordingRef.current) {
+            try {
+              recognition.start();
+            } catch (e) {
+              console.warn('Failed to restart speech recognition:', e);
+            }
+          }
+        };
+
+        recognitionRef.current = recognition;
+        recognition.start();
+      } else {
+        // Fallback for environment where SpeechRecognition is not supported
+        sttTimeoutRef.current = setTimeout(() => {
+          if (isRecordingRef.current) {
+            isRecordingRef.current = false;
+            setSttErrorMsg(lang === 'it' ? 'SpeechRecognition non supportato' : 'SpeechRecognition not supported');
+            setSttStatus('error');
+            if (sttMuteSystem) {
+              setSystemMute(false).catch(console.error);
+            }
+            // Clean up visualizer stream
+            if (animationFrameRef.current) {
+              cancelAnimationFrame(animationFrameRef.current);
+              animationFrameRef.current = null;
+            }
+            if (audioStreamRef.current) {
+              audioStreamRef.current.getTracks().forEach(track => track.stop());
+              audioStreamRef.current = null;
+            }
+            if (audioContextRef.current) {
+              audioContextRef.current.close().catch(console.error);
+              audioContextRef.current = null;
+            }
+            sttTimeoutRef.current = setTimeout(() => {
+              setSttStatus(null);
+              handleAutoUnload();
+            }, 3000);
+          }
+        }, 1000);
+      }
+    } catch (e) {
+      console.error('Speech recognition failed to init:', e);
+    }
+  };
+
+  const cancelRecording = () => {
+    if (!isRecordingRef.current) return;
+    isRecordingRef.current = false;
+
+    // Unmute system volume if muted
+    if (sttMuteSystem) {
+      setSystemMute(false).catch(console.error);
+    }
+
+    // Clean up AudioContext & streams
+    if (animationFrameRef.current) {
+      cancelAnimationFrame(animationFrameRef.current);
+      animationFrameRef.current = null;
+    }
+    if (audioStreamRef.current) {
+      audioStreamRef.current.getTracks().forEach(track => track.stop());
+      audioStreamRef.current = null;
+    }
+    if (audioContextRef.current) {
+      audioContextRef.current.close().catch(console.error);
+      audioContextRef.current = null;
+    }
+    if (recognitionRef.current) {
+      try {
+        recognitionRef.current.stop();
+      } catch (e) {}
+      recognitionRef.current = null;
+    }
+
+    setSttStatus(null);
+    handleAutoUnload();
+  };
+
+  const stopRecording = (transcriptionText?: string) => {
+    if (!isRecordingRef.current) return;
+    isRecordingRef.current = false;
+    setSttStatus('transcribing');
+
+    // Unmute system volume if muted
+    if (sttMuteSystem) {
+      setSystemMute(false).catch(console.error);
+    }
+
+    // Clean up AudioContext & streams
+    if (animationFrameRef.current) {
+      cancelAnimationFrame(animationFrameRef.current);
+      animationFrameRef.current = null;
+    }
+    if (audioStreamRef.current) {
+      audioStreamRef.current.getTracks().forEach(track => track.stop());
+      audioStreamRef.current = null;
+    }
+    if (audioContextRef.current) {
+      audioContextRef.current.close().catch(console.error);
+      audioContextRef.current = null;
+    }
+    if (recognitionRef.current) {
+      try {
+        recognitionRef.current.stop();
+      } catch (e) {}
+      recognitionRef.current = null;
+    }
+
+    // Process transcription pasting
+    sttTimeoutRef.current = setTimeout(async () => {
+      let textToPaste = transcriptionText || lastRecognizedTextRef.current;
+      
+      if (!textToPaste) {
+        setSttErrorMsg(lang === 'it' ? 'Nessun testo rilevato' : 'No speech detected');
+        setSttStatus('error');
+        sttTimeoutRef.current = setTimeout(() => {
+          setSttStatus(null);
+          handleAutoUnload();
+        }, 1500);
+        return;
+      }
+
+      if (textToPaste) {
+        // Write to clipboard if required
+        if (sttPasteMethod === 'clipboard') {
+          try {
+            await navigator.clipboard.writeText(textToPaste);
+          } catch (clipErr) {
+            console.error('Failed to copy text to clipboard:', clipErr);
+          }
+        }
+
+        // Paste directly to inputs/trigger custom event if 'direct'
+        if (sttPasteMethod === 'direct') {
+          const targetEl = lastActiveElementRef.current || document.activeElement;
+          console.log('[STT] Dispatching fit-speech-transcription event with text:', textToPaste, 'sttPasteMethod:', sttPasteMethod, 'target:', targetEl ? targetEl.tagName : 'None');
+          
+          // 1. Dispatch custom event for editors and terminals, bubble it from targetEl
+          const ev = new CustomEvent('fit-speech-transcription', { 
+            bubbles: true, 
+            cancelable: true,
+            detail: { text: textToPaste } 
+          });
+          if (targetEl) {
+            targetEl.dispatchEvent(ev);
+          } else {
+            window.dispatchEvent(ev);
+          }
+
+          // 2. Fallback: Paste into standard focused inputs/textareas (excluding xterm helper textarea)
+          const activeEl = targetEl;
+          console.log('[STT] Target element for fallback paste:', activeEl ? activeEl.tagName : 'None', 'Classes:', activeEl ? activeEl.className : '');
+          if (activeEl && 
+              (activeEl instanceof HTMLInputElement || activeEl instanceof HTMLTextAreaElement) &&
+              !activeEl.classList.contains('xterm-helper-textarea')) {
+            const start = activeEl.selectionStart || 0;
+            const end = activeEl.selectionEnd || 0;
+            const val = activeEl.value;
+            const newValue = val.substring(0, start) + textToPaste + val.substring(end);
+            
+            try {
+              // React overrides the value setter. To trigger onChange, we must call the native setter.
+              const prototype = activeEl instanceof HTMLInputElement ? HTMLInputElement.prototype : HTMLTextAreaElement.prototype;
+              const descriptor = Object.getOwnPropertyDescriptor(prototype, 'value');
+              if (descriptor && descriptor.set) {
+                descriptor.set.call(activeEl, newValue);
+              } else {
+                activeEl.value = newValue;
+              }
+              activeEl.selectionStart = activeEl.selectionEnd = start + textToPaste.length;
+              activeEl.dispatchEvent(new Event('input', { bubbles: true }));
+              console.log('[STT] Fallback paste succeeded. New value set.');
+            } catch (err) {
+              console.error('[STT] Error during fallback native value setting:', err);
+              // Fallback assignment
+              activeEl.value = newValue;
+              activeEl.selectionStart = activeEl.selectionEnd = start + textToPaste.length;
+              activeEl.dispatchEvent(new Event('input', { bubbles: true }));
+            }
+          }
+        }
+      }
+      setSttStatus(null);
+      handleAutoUnload();
+    }, 600);
+  };
+
+  // Keyboard shortcut listener hook
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement;
+      if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') {
+        if (target.closest('.settings-modal') && !target.classList.contains('settings-select__native')) {
+          return;
+        }
+      }
+
+      if (matchShortcut(e, sttShortcut)) {
+        e.preventDefault();
+        if (sttStatus === 'transcribing') return; // Ignore key presses while transcribing
+
+        if (sttPushToTalk) {
+          if (!isRecordingRef.current) {
+            startRecording();
+          }
+        } else {
+          // Toggle mode
+          if (isRecordingRef.current) {
+            stopRecording();
+          } else {
+            startRecording();
+          }
+        }
+      }
+    };
+
+    const handleKeyUp = (e: KeyboardEvent) => {
+      if (matchShortcut(e, sttShortcut)) {
+        if (sttStatus === 'transcribing') return; // Ignore key releases while transcribing
+
+        if (sttPushToTalk && isRecordingRef.current) {
+          stopRecording();
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown, true);
+    window.addEventListener('keyup', handleKeyUp, true);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown, true);
+      window.removeEventListener('keyup', handleKeyUp, true);
+    };
+  }, [sttShortcut, sttPushToTalk, sttMicId, sttVolume, settingsOpen, lang, sttAutoUnload, sttOverlayPos, sttPasteMethod, sttMuteSystem, sttStatus]);
+
 
   const handleLoaderFinished = () => {
     setShowLoader(false);
@@ -272,6 +705,17 @@ export function App() {
       <SettingsModal />
       <AboutModal />
       <UpdateModal />
+
+      {/* Speech overlay visualizer */}
+      {sttStatus && (
+        <SpeechOverlay 
+          status={sttStatus} 
+          volume={sttVolumeLevel} 
+          errorMsg={sttErrorMsg} 
+          onClose={cancelRecording} 
+          position={sttOverlayPos} 
+        />
+      )}
     </div>
   );
 }

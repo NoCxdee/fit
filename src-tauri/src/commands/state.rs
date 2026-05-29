@@ -66,6 +66,22 @@ pub struct AppState {
     pub open_tabs: Vec<Tab>,
     pub active_tab_id: Option<String>,
     pub file_drawer_open: bool,
+    #[serde(default)]
+    pub stt_shortcut: Option<String>,
+    #[serde(default)]
+    pub stt_mic_id: Option<String>,
+    #[serde(default)]
+    pub stt_volume: Option<f64>,
+    #[serde(default)]
+    pub stt_push_to_talk: Option<bool>,
+    #[serde(default)]
+    pub stt_auto_unload: Option<String>,
+    #[serde(default)]
+    pub stt_overlay_pos: Option<String>,
+    #[serde(default)]
+    pub stt_paste_method: Option<String>,
+    #[serde(default)]
+    pub stt_mute_system: Option<bool>,
 }
 
 /// Get the path to the state file.
