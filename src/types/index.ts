@@ -131,6 +131,8 @@ export interface AppState {
   sttOverlayPos: 'bottom' | 'top' | 'center' | 'none';
   sttPasteMethod: 'clipboard' | 'direct' | 'none';
   sttMuteSystem: boolean;
+  inspectorMode: boolean;
+  capturedElement: string | null;
 }
 
 export type AppAction =
@@ -171,5 +173,7 @@ export type AppAction =
   | { type: 'SET_STT_OVERLAY_POS'; payload: 'bottom' | 'top' | 'center' | 'none' }
   | { type: 'SET_STT_PASTE_METHOD'; payload: 'clipboard' | 'direct' | 'none' }
   | { type: 'SET_STT_MUTE_SYSTEM'; payload: boolean }
+  | { type: 'SET_INSPECTOR_MODE'; payload: boolean }
+  | { type: 'SET_CAPTURED_ELEMENT'; payload: string | null }
   | { type: 'LOAD_STATE'; payload: AppState };
 

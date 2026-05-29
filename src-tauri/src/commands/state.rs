@@ -82,6 +82,8 @@ pub struct AppState {
     pub stt_paste_method: Option<String>,
     #[serde(default)]
     pub stt_mute_system: Option<bool>,
+    #[serde(default)]
+    pub use_web_gl: Option<bool>,
 }
 
 /// Get the path to the state file.

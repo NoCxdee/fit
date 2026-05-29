@@ -23,8 +23,8 @@ const translations: Record<Lang, Record<string, string>> = {
     'dialog.openWorkspace': 'Open Workspace Folder',
 
     // MainContent
-    'main.welcome': 'Welcome to Fit',
-    'main.subtitle': 'Add a workspace and create a session to get started.',
+    'main.welcome': 'No active session',
+    'main.subtitle': 'Select a workspace and create a session to start building.',
 
     // SessionPanel
     'session.newSession': 'New session',
@@ -94,6 +94,7 @@ const translations: Record<Lang, Record<string, string>> = {
     'preview.openBrowser': 'Open in browser',
     'preview.placeholder': 'http://localhost:3000',
     'preview.portUnreachable': 'Port Unreachable',
+    'preview.elementCaptured': 'Element Captured',
     'preview.noServer': 'No active server was detected on port :{port}. Please start your development server on this port and try again.',
     'preview.errorVerify': 'An error occurred while verifying port :{port}.',
     'preview.recursive': 'Cannot load the Fit application recursively inside the preview frame.',
@@ -142,6 +143,8 @@ const translations: Record<Lang, Record<string, string>> = {
     'terminal.splitDown': 'Split terminal down',
     'terminal.togglePreview': 'Toggle Live Preview',
     'terminal.close': 'Close terminal',
+    'terminal.pasteCaptured': 'Click to paste element',
+    'terminal.dropFile': 'Drop to paste file path',
 
     // New keys added for 100% translation coverage
     'drawer.tab.git.changes': 'Changes',
@@ -213,8 +216,8 @@ const translations: Record<Lang, Record<string, string>> = {
     'welcome.recentProjects': 'Progetti recenti',
     'dialog.openWorkspace': 'Apri cartella workspace',
 
-    'main.welcome': 'Benvenuto in Fit',
-    'main.subtitle': 'Aggiungi un workspace e crea una sessione per iniziare.',
+    'main.welcome': 'Nessuna sessione attiva',
+    'main.subtitle': 'Seleziona un workspace e crea una sessione per iniziare.',
 
     'session.newSession': 'Nuova sessione',
     'session.workspaceOptions': 'Opzioni workspace',
@@ -279,6 +282,7 @@ const translations: Record<Lang, Record<string, string>> = {
     'preview.openBrowser': 'Apri nel browser',
     'preview.placeholder': 'http://localhost:3000',
     'preview.portUnreachable': 'Porta irraggiungibile',
+    'preview.elementCaptured': 'Elemento Catturato',
     'preview.noServer': 'Nessun server attivo rilevato sulla porta :{port}. Avvia il tuo server di sviluppo su questa porta e riprova.',
     'preview.errorVerify': 'Si è verificato un errore durante la verifica della porta :{port}.',
     'preview.recursive': 'Impossibile caricare l\'app Fit ricorsivamente all\'interno del frame di anteprima.',
@@ -325,6 +329,8 @@ const translations: Record<Lang, Record<string, string>> = {
     'terminal.splitDown': 'Dividi terminale in basso',
     'terminal.togglePreview': 'Attiva/disattiva anteprima live',
     'terminal.close': 'Chiudi terminale',
+    'terminal.pasteCaptured': 'Clicca per incollare l\'elemento',
+    'terminal.dropFile': 'Rilascia per incollare il percorso',
 
     // New keys added for 100% translation coverage
     'drawer.tab.git.changes': 'Modifiche',
@@ -396,8 +402,8 @@ const translations: Record<Lang, Record<string, string>> = {
     'welcome.recentProjects': 'Proyectos recientes',
     'dialog.openWorkspace': 'Abrir carpeta del workspace',
 
-    'main.welcome': 'Bienvenido a Fit',
-    'main.subtitle': 'Agrega un workspace y crea una sesión para empezar.',
+    'main.welcome': 'Sin sesión activa',
+    'main.subtitle': 'Selecciona un workspace y crea una sesión para empezar.',
 
     'session.newSession': 'Nueva sesión',
     'session.workspaceOptions': 'Opciones del workspace',
@@ -462,6 +468,7 @@ const translations: Record<Lang, Record<string, string>> = {
     'preview.openBrowser': 'Abrir en el navegador',
     'preview.placeholder': 'http://localhost:3000',
     'preview.portUnreachable': 'Puerto inaccesible',
+    'preview.elementCaptured': 'Elemento Capturado',
     'preview.noServer': 'No se detectó ningún servidor activo en el puerto :{port}. Inicia tu servidor de desarrollo en este puerto e inténtalo de nuevo.',
     'preview.errorVerify': 'Ocurrió un error al verificar el puerto :{port}.',
     'preview.recursive': 'No se puede cargar la aplicación Fit recursivamente dentro del marco de vista previa.',
@@ -508,6 +515,8 @@ const translations: Record<Lang, Record<string, string>> = {
     'terminal.splitDown': 'Dividir terminal hacia abajo',
     'terminal.togglePreview': 'Alternar vista previa',
     'terminal.close': 'Cerrar terminal',
+    'terminal.pasteCaptured': 'Haga clic para pegar el elemento',
+    'terminal.dropFile': 'Suelta para pegar la ruta del archivo',
 
     // New keys added for 100% translation coverage
     'drawer.tab.git.changes': 'Cambios',
@@ -546,8 +555,8 @@ const translations: Record<Lang, Record<string, string>> = {
     'welcome.recentProjects': 'Projets récents',
     'dialog.openWorkspace': 'Ouvrir le dossier du workspace',
 
-    'main.welcome': 'Bienvenue dans Fit',
-    'main.subtitle': 'Ajoutez un workspace et créez une session pour commencer.',
+    'main.welcome': 'Aucune session active',
+    'main.subtitle': 'Sélectionnez un workspace et créez une session pour commencer.',
 
     'session.newSession': 'Nouvelle session',
     'session.workspaceOptions': 'Options du workspace',
@@ -612,6 +621,7 @@ const translations: Record<Lang, Record<string, string>> = {
     'preview.openBrowser': 'Ouvrir dans le navigateur',
     'preview.placeholder': 'http://localhost:3000',
     'preview.portUnreachable': 'Port inaccessible',
+    'preview.elementCaptured': 'Élément Capturé',
     'preview.noServer': 'Aucun serveur actif détecté sur le port :{port}. Démarrez votre serveur de développement sur ce port et réessayez.',
     'preview.errorVerify': 'Une erreur s\'est produite lors de la vérification du port :{port}.',
     'preview.recursive': 'Impossible de charger l\'application Fit de manière récursive dans le cadre d\'aperçu.',
@@ -658,6 +668,8 @@ const translations: Record<Lang, Record<string, string>> = {
     'terminal.splitDown': 'Diviser le terminal vers le bas',
     'terminal.togglePreview': 'Basculer l\'aperçu',
     'terminal.close': 'Fermer le terminal',
+    'terminal.pasteCaptured': "Cliquez pour coller l'élément",
+    'terminal.dropFile': 'Déposez pour coller le chemin du fichier',
 
     // New keys added for 100% translation coverage
     'drawer.tab.git.changes': 'Modifications',
@@ -696,8 +708,8 @@ const translations: Record<Lang, Record<string, string>> = {
     'welcome.recentProjects': 'Kürzliche Projekte',
     'dialog.openWorkspace': 'Workspace-Ordner öffnen',
 
-    'main.welcome': 'Willkommen bei Fit',
-    'main.subtitle': 'Fügen Sie einen Workspace hinzu und erstellen Sie eine Sitzung, um zu beginnen.',
+    'main.welcome': 'Keine aktive Sitzung',
+    'main.subtitle': 'Wählen Sie einen Workspace aus und erstellen Sie eine Sitzung, um zu beginnen.',
 
     'session.newSession': 'Neue Sitzung',
     'session.workspaceOptions': 'Workspace-Optionen',
@@ -762,6 +774,7 @@ const translations: Record<Lang, Record<string, string>> = {
     'preview.openBrowser': 'Im Browser öffnen',
     'preview.placeholder': 'http://localhost:3000',
     'preview.portUnreachable': 'Port nicht erreichbar',
+    'preview.elementCaptured': 'Element Erfasst',
     'preview.noServer': 'Kein aktiver Server auf Port :{port} erkannt. Bitte starten Sie Ihren Entwicklungsserver auf diesem Port und versuchen Sie es erneut.',
     'preview.errorVerify': 'Bei der Überprüfung von Port :{port} ist ein Fehler aufgetreten.',
     'preview.recursive': 'Die Fit-Anwendung kann nicht rekursiv im Vorschau-Frame geladen werden.',
@@ -808,6 +821,8 @@ const translations: Record<Lang, Record<string, string>> = {
     'terminal.splitDown': 'Terminal nach unten teilen',
     'terminal.togglePreview': 'Vorschau umschalten',
     'terminal.close': 'Terminal schließen',
+    'terminal.pasteCaptured': 'Klicken, um Element einzufügen',
+    'terminal.dropFile': 'Ablegen, um Dateipfad einzufügen',
 
     // New keys added for 100% translation coverage
     'drawer.tab.git.changes': 'Änderungen',

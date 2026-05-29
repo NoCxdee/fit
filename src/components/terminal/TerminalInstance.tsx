@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Terminal } from '@xterm/xterm';
 import { FitAddon } from '@xterm/addon-fit';
 import { WebglAddon } from '@xterm/addon-webgl';
+import { CanvasAddon } from '@xterm/addon-canvas';
 import { listen } from '@tauri-apps/api/event';
 import { ptySpawn, ptyWrite, ptyResize, ptyKill, getClipboardFiles } from '../../utils/ipc';
 import { useAppState, useAppDispatch } from '../../stores/appStore';
@@ -15,20 +16,114 @@ import '@xterm/xterm/css/xterm.css';
 interface TerminalInstanceProps {
   terminalId: string;
   shell: string;
+  cwd: string;
 }
 
-export function TerminalInstance({ terminalId, shell }: TerminalInstanceProps) {
+export function TerminalInstance({ terminalId, shell, cwd }: TerminalInstanceProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const termRef = useRef<Terminal | null>(null);
   const fitAddonRef = useRef<FitAddon | null>(null);
   const webGlAddonRef = useRef<WebglAddon | null>(null);
-  const { workspaces, activeWorkspaceId, sessions, activeSessionId, useWebGl } = useAppState();
+  const canvasAddonRef = useRef<CanvasAddon | null>(null);
+  const { sessions, activeSessionId, useWebGl, capturedElement } = useAppState();
   const dispatch = useAppDispatch();
   const { t } = useTranslation();
   const [isReady, setIsReady] = useState(false);
+  const [isDraggingFile, setIsDraggingFile] = useState(false);
+  const [dragFileName, setDragFileName] = useState<string | null>(null);
+  const wrapperRef = useRef<HTMLDivElement>(null);
 
-  const activeWorkspace = workspaces.find(w => w.id === activeWorkspaceId);
-  const cwd = activeWorkspace ? activeWorkspace.path : '';
+  // Handle clicking the terminal when a captured element is waiting to be injected
+  const handleDropCapturedElement = () => {
+    if (capturedElement && termRef.current && isReady) {
+      const isHtml = capturedElement.trim().startsWith('<');
+      const textToWrite = isHtml ? capturedElement : `"${capturedElement}"`;
+      ptyWrite(terminalId, textToWrite).catch(console.error);
+      dispatch({ type: 'SET_CAPTURED_ELEMENT', payload: null });
+    }
+  };
+
+  // ── Tauri native File Drag & Drop ─────────────────────────────
+  // HTML5 drag events are intercepted by Tauri WebView2 on Windows,
+  // so we listen to tauri:// events and use position to detect which
+  // terminal pane the cursor is over.
+  useEffect(() => {
+    let unEnter: (() => void) | null = null;
+    let unOver: (() => void) | null = null;
+    let unLeave: (() => void) | null = null;
+    let unDrop: (() => void) | null = null;
+
+    const isOverThisPane = (pos: { x: number; y: number }) => {
+      const el = wrapperRef.current;
+      if (!el) return false;
+      const rect = el.getBoundingClientRect();
+      return (
+        pos.x >= rect.left &&
+        pos.x <= rect.right &&
+        pos.y >= rect.top &&
+        pos.y <= rect.bottom
+      );
+    };
+
+    const setup = async () => {
+      unEnter = await listen<{ paths: string[]; position: { x: number; y: number } }>(
+        'tauri://drag-enter',
+        (event) => {
+          if (isOverThisPane(event.payload.position)) {
+            setIsDraggingFile(true);
+            if (event.payload.paths && event.payload.paths.length > 0) {
+              const name = event.payload.paths[0].split(/[/\\]/).pop() || null;
+              setDragFileName(name);
+            }
+          }
+        }
+      );
+
+      unOver = await listen<{ position: { x: number; y: number } }>(
+        'tauri://drag-over',
+        (event) => {
+          const over = isOverThisPane(event.payload.position);
+          setIsDraggingFile(prev => {
+            if (over && !prev) return true;
+            if (!over && prev) return false;
+            return prev;
+          });
+        }
+      );
+
+      unLeave = await listen('tauri://drag-leave', () => {
+        setIsDraggingFile(false);
+        setDragFileName(null);
+      });
+
+      unDrop = await listen<{ paths: string[]; position: { x: number; y: number } }>(
+        'tauri://drag-drop',
+        (event) => {
+          setIsDraggingFile(false);
+          setDragFileName(null);
+          if (
+            isOverThisPane(event.payload.position) &&
+            event.payload.paths &&
+            event.payload.paths.length > 0 &&
+            termRef.current &&
+            isReady
+          ) {
+            const pathsStr = event.payload.paths.map(p => `"${p}"`).join(' ');
+            ptyWrite(terminalId, pathsStr).catch(console.error);
+          }
+        }
+      );
+    };
+
+    setup();
+
+    return () => {
+      unEnter?.();
+      unOver?.();
+      unLeave?.();
+      unDrop?.();
+    };
+  }, [terminalId, isReady]);
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -39,7 +134,8 @@ export function TerminalInstance({ terminalId, shell }: TerminalInstanceProps) {
     const term = new Terminal({
       fontFamily: "'JetBrains Mono Regular','JetBrains Mono',Consolas,monospace",
       fontSize: 13,
-      lineHeight: 1.2,
+      lineHeight: 1.0,
+      letterSpacing: 0,
       cursorBlink: true,
       cursorStyle: 'block',
       theme: {
@@ -112,7 +208,22 @@ export function TerminalInstance({ terminalId, shell }: TerminalInstanceProps) {
         term.loadAddon(webgl);
         webGlAddonRef.current = webgl;
       } catch (e) {
-        console.warn('WebGL addon failed to load:', e);
+        console.warn('WebGL addon failed to load, falling back to Canvas:', e);
+        try {
+          const canvas = new CanvasAddon();
+          term.loadAddon(canvas);
+          canvasAddonRef.current = canvas;
+        } catch (canvasErr) {
+          console.warn('Canvas addon fallback failed:', canvasErr);
+        }
+      }
+    } else {
+      try {
+        const canvas = new CanvasAddon();
+        term.loadAddon(canvas);
+        canvasAddonRef.current = canvas;
+      } catch (e) {
+        console.warn('Canvas addon failed to load:', e);
       }
     }
 
@@ -251,6 +362,12 @@ export function TerminalInstance({ terminalId, shell }: TerminalInstanceProps) {
         } catch (e) {}
         webGlAddonRef.current = null;
       }
+      if (canvasAddonRef.current) {
+        try {
+          canvasAddonRef.current.dispose();
+        } catch (e) {}
+        canvasAddonRef.current = null;
+      }
       try {
         term.dispose();
       } catch (e) {}
@@ -265,22 +382,39 @@ export function TerminalInstance({ terminalId, shell }: TerminalInstanceProps) {
     const term = termRef.current;
     if (!term || !isReady) return;
 
+    if (webGlAddonRef.current) {
+      try {
+        webGlAddonRef.current.dispose();
+      } catch (e) {}
+      webGlAddonRef.current = null;
+    }
+    if (canvasAddonRef.current) {
+      try {
+        canvasAddonRef.current.dispose();
+      } catch (e) {}
+      canvasAddonRef.current = null;
+    }
+
     if (useWebGl) {
-      if (!webGlAddonRef.current) {
+      try {
+        const webgl = new WebglAddon();
+        term.loadAddon(webgl);
+        webGlAddonRef.current = webgl;
+      } catch (e) {
+        console.warn('WebGL addon failed to load, falling back to Canvas:', e);
         try {
-          const webgl = new WebglAddon();
-          term.loadAddon(webgl);
-          webGlAddonRef.current = webgl;
-        } catch (e) {
-          console.warn('WebGL addon failed to load:', e);
-        }
+          const canvas = new CanvasAddon();
+          term.loadAddon(canvas);
+          canvasAddonRef.current = canvas;
+        } catch (canvasErr) {}
       }
     } else {
-      if (webGlAddonRef.current) {
-        try {
-          webGlAddonRef.current.dispose();
-        } catch (e) {}
-        webGlAddonRef.current = null;
+      try {
+        const canvas = new CanvasAddon();
+        term.loadAddon(canvas);
+        canvasAddonRef.current = canvas;
+      } catch (e) {
+        console.warn('Canvas addon failed to load:', e);
       }
     }
   }, [useWebGl, isReady]);
@@ -365,7 +499,7 @@ export function TerminalInstance({ terminalId, shell }: TerminalInstanceProps) {
   const terminalCount = activeSession ? activeSession.terminals.length : 0;
 
   return (
-    <div className="terminal-container">
+    <div className="terminal-container" ref={wrapperRef}>
       <div className="terminal-header">
         <div className="terminal-header__shell">
           <span className={`terminal-header__dot ${isReady ? 'terminal-header__dot--ready' : ''}`} />
@@ -407,9 +541,37 @@ export function TerminalInstance({ terminalId, shell }: TerminalInstanceProps) {
       </div>
       <div 
         className="terminal-wrapper" 
-        style={{ padding: '8px 12px 8px 12px', display: 'flex', flexDirection: 'column' }}
+        style={{ padding: '8px 12px 8px 12px', display: 'flex', flexDirection: 'column', position: 'relative' }}
       >
         <div ref={containerRef} style={{ width: '100%', height: '100%' }} />
+        
+        {capturedElement && (
+          <div 
+            className="terminal-drop-overlay"
+            onClick={handleDropCapturedElement}
+          >
+            <div className="terminal-drop-overlay__content">
+              <span>{t('terminal.pasteCaptured')}</span>
+            </div>
+          </div>
+        )}
+
+        {isDraggingFile && (
+          <div className="terminal-file-drop-overlay">
+            <div className="terminal-file-drop-overlay__content">
+              <div className="terminal-file-drop-overlay__icon">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                  <polyline points="14 2 14 8 20 8" />
+                </svg>
+              </div>
+              <span className="terminal-file-drop-overlay__label">{t('terminal.dropFile')}</span>
+              {dragFileName && (
+                <span className="terminal-file-drop-overlay__filename">{dragFileName}</span>
+              )}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

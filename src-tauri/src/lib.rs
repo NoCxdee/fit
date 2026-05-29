@@ -26,6 +26,92 @@ pub fn run() {
                         .build(),
                 )?;
             }
+
+            // Create main window programmatically to inject script into all frames globally
+            let win_builder = tauri::WebviewWindowBuilder::new(
+                app,
+                "main",
+                tauri::WebviewUrl::default(),
+            )
+            .title("Fit")
+            .inner_size(1280.0, 800.0)
+            .min_inner_size(900.0, 600.0)
+            .resizable(true)
+            .decorations(false)
+            .center()
+            .initialization_script_for_all_frames(r#"
+                if (typeof window !== 'undefined') {
+                  if (window.self !== window.top) {
+                    console.log('[FIT DEBUG Global] Inspector script loaded inside iframe.');
+                    
+                    let active = false;
+
+                    const overHandler = (e) => {
+                      if (!active) return;
+                      e.stopPropagation();
+                      e.target.classList.add('fit-inspector-hover');
+                    };
+
+                    const outHandler = (e) => {
+                      if (!active) return;
+                      e.target.classList.remove('fit-inspector-hover');
+                    };
+
+                    const clickHandler = (e) => {
+                      if (!active) return;
+                      e.preventDefault();
+                      e.stopPropagation();
+
+                      const target = e.target;
+                      const data = target.outerHTML;
+
+                      target.classList.remove('fit-inspector-hover');
+                      window.parent.postMessage({ type: 'FIT_INSPECTOR_CAPTURED', payload: data }, '*');
+                      active = false;
+                      document.querySelectorAll('.fit-inspector-hover').forEach(el => el.classList.remove('fit-inspector-hover'));
+                    };
+
+                    const init = () => {
+                      console.log('[FIT DEBUG Global] DOMContentLoaded. Initializing style and listeners.');
+                      const style = document.createElement('style');
+                      style.innerHTML = `
+                        .fit-inspector-hover {
+                          outline: 2px dashed #d4a857 !important;
+                          outline-offset: -2px !important;
+                          background-color: rgba(212, 168, 87, 0.2) !important;
+                          cursor: crosshair !important;
+                        }
+                      `;
+                      document.head.appendChild(style);
+
+                      document.body.addEventListener('mouseover', overHandler, true);
+                      document.body.addEventListener('mouseout', outHandler, true);
+                      document.body.addEventListener('click', clickHandler, true);
+                    };
+
+                    if (document.readyState === 'loading') {
+                      document.addEventListener('DOMContentLoaded', init);
+                    } else {
+                      init();
+                    }
+
+                    window.addEventListener('message', (e) => {
+                      if (e.data && e.data.type === 'FIT_TOGGLE_INSPECTOR') {
+                        active = e.data.payload;
+                        if (!active) {
+                          document.querySelectorAll('.fit-inspector-hover').forEach(el => el.classList.remove('fit-inspector-hover'));
+                        }
+                      }
+                    });
+
+                    // Send ready signal to parent
+                    window.parent.postMessage({ type: 'FIT_INSPECTOR_READY' }, '*');
+                  }
+                }
+            "#);
+
+            win_builder.build()?;
+
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![

@@ -19,7 +19,7 @@ const initialState: AppState = {
   drawerTab: 'files',
   gitStatus: null,
   panelSizes: {},
-  useWebGl: true,
+  useWebGl: false,
   settingsOpen: false,
   aboutOpen: false,
   pendingUpdate: null,
@@ -33,11 +33,18 @@ const initialState: AppState = {
   sttOverlayPos: 'bottom',
   sttPasteMethod: 'direct',
   sttMuteSystem: false,
+  inspectorMode: false,
+  capturedElement: null,
 };
 
 // ── Reducer ──────────────────────────────────────────────────────
 function appReducer(state: AppState, action: AppAction): AppState {
   switch (action.type) {
+    case 'SET_INSPECTOR_MODE':
+      return { ...state, inspectorMode: action.payload, capturedElement: null };
+    
+    case 'SET_CAPTURED_ELEMENT':
+      return { ...state, capturedElement: action.payload, inspectorMode: false };
     case 'ADD_WORKSPACE': {
       const newSession = {
         id: generateId('session'),
@@ -535,7 +542,7 @@ function appReducer(state: AppState, action: AppAction): AppState {
       return {
         ...action.payload,
         openTabs: migratedTabs,
-        useWebGl: action.payload.useWebGl !== undefined ? action.payload.useWebGl : true,
+        useWebGl: action.payload.useWebGl !== undefined ? action.payload.useWebGl : false,
         settingsOpen: false,
         aboutOpen: false,
         pendingUpdate: null,

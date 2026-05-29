@@ -7,7 +7,7 @@ import { useTranslation } from '../../i18n';
 import { TerminalGrid } from '../terminal/TerminalGrid';
 import { CodeEditor } from '../editor/CodeEditor';
 import { LivePreview } from '../preview/LivePreview';
-import { DiffView } from '../editor/DiffView';
+import { Terminal } from 'lucide-react';
 
 export function MainContent() {
   const { openTabs, activeTabId, activeSessionId } = useAppState();
@@ -20,12 +20,12 @@ export function MainContent() {
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', height: '100%', width: '100%', minHeight: 0, position: 'relative' }}>
       {showWelcome && (
         <div className="welcome-screen">
-          <div className="welcome-screen__logo">F</div>
-          <div className="welcome-screen__title">{t('main.welcome')}</div>
-          <div className="welcome-screen__subtitle">
-            {t('main.subtitle')}
-            <br />
-            {t('app.description')}
+          <div className="welcome-screen__empty-state">
+            <Terminal className="welcome-screen__empty-icon" size={40} strokeWidth={1.2} />
+            <div className="welcome-screen__empty-title">{t('main.welcome')}</div>
+            <div className="welcome-screen__empty-subtitle">
+              {t('main.subtitle')}
+            </div>
           </div>
         </div>
       )}

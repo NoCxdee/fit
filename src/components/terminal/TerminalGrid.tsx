@@ -62,6 +62,7 @@ export function TerminalGrid({ sessionId }: TerminalGridProps) {
           <TerminalInstance
             terminalId={terminal.id}
             shell={terminal.shell}
+            cwd={terminal.cwd}
           />
         </Panel>
       )).reduce<React.ReactNode[]>((acc, panel, idx) => {
