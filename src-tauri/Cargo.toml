@@ -1,6 +1,6 @@
 [package]
 name = "fit"
-version = "1.0.7"
+version = "1.0.8"
 description = "Fit — Ultra-lightweight agentic development environment"
 authors = ["you"]
 license = "MIT"
