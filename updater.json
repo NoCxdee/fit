@@ -1,19 +1,19 @@
 {
-  "version": "1.0.10",
+  "version": "1.0.11",
   "notes": "---\n*For full details, view the [commit history](#{{COMPARE_URL}}).*",
-  "pub_date": "2026-05-30T15:23:08.014Z",
+  "pub_date": "2026-05-30T21:10:21.261Z",
   "platforms": {
     "windows-x86_64": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVTV2lPcUIrM3NlcW1FRGUzNldvU1RTSFc4TFpCS2JVMmViZUFsSWRUSytxLzR0aEloem1oK0NRcVJ2MFZoVHRGY1BVRkFpdjlpM3lPK3Q5Y0xSYW5mbDA0Sk1Vc1YrL3dvPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgwMTU0NTg0CWZpbGU6Rml0XzEuMC4xMF94NjQtc2V0dXAuZXhlCjVLSExaNi9qNWdZdWdMWTRya0RmdmVLZmZRQnAxaXc2eXdjTy9GRU1hRmM4ZTA0NHc1UzE1TkdRdlNRM1FsaVY4OEZHdjlPL1YyU05hYllpOGtiSUNBPT0K",
-      "url": "https://github.com/NoCxdee/fit/releases/download/v1.0.10/Fit_1.0.10_x64-setup.exe"
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVTV2lPcUIrM3NlcXJVazVOVlFlUE04bDJ2cHRUWExhcHVtcXJMM1lKZjV5K3pGMXgwV2VLc2wxS1VUcVNLRkk1bHZtTEJmeElULzg5VDRDT2dyei9KM05mQWJEMHlhSGc4PQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgwMTc1NDE3CWZpbGU6Rml0XzEuMC4xMV94NjQtc2V0dXAuZXhlCmNrZU5sVWMrRC9qNUo3bVhoYTdlbjEvcEhBSzUvWVdkT3d1cmprRFFYV1IyMlRkUi9BNWtrd0xKa0kwTjZMbndCZzdhZ2dXTmpyc2hhODdPbWtrR0FnPT0K",
+      "url": "https://github.com/NoCxdee/fit/releases/download/v1.0.11/Fit_1.0.11_x64-setup.exe"
     },
     "windows-x86_64-nsis": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVTV2lPcUIrM3NlcW1FRGUzNldvU1RTSFc4TFpCS2JVMmViZUFsSWRUSytxLzR0aEloem1oK0NRcVJ2MFZoVHRGY1BVRkFpdjlpM3lPK3Q5Y0xSYW5mbDA0Sk1Vc1YrL3dvPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgwMTU0NTg0CWZpbGU6Rml0XzEuMC4xMF94NjQtc2V0dXAuZXhlCjVLSExaNi9qNWdZdWdMWTRya0RmdmVLZmZRQnAxaXc2eXdjTy9GRU1hRmM4ZTA0NHc1UzE1TkdRdlNRM1FsaVY4OEZHdjlPL1YyU05hYllpOGtiSUNBPT0K",
-      "url": "https://github.com/NoCxdee/fit/releases/download/v1.0.10/Fit_1.0.10_x64-setup.exe"
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVTV2lPcUIrM3NlcXJVazVOVlFlUE04bDJ2cHRUWExhcHVtcXJMM1lKZjV5K3pGMXgwV2VLc2wxS1VUcVNLRkk1bHZtTEJmeElULzg5VDRDT2dyei9KM05mQWJEMHlhSGc4PQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgwMTc1NDE3CWZpbGU6Rml0XzEuMC4xMV94NjQtc2V0dXAuZXhlCmNrZU5sVWMrRC9qNUo3bVhoYTdlbjEvcEhBSzUvWVdkT3d1cmprRFFYV1IyMlRkUi9BNWtrd0xKa0kwTjZMbndCZzdhZ2dXTmpyc2hhODdPbWtrR0FnPT0K",
+      "url": "https://github.com/NoCxdee/fit/releases/download/v1.0.11/Fit_1.0.11_x64-setup.exe"
     },
     "windows-x86_64-msi": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVTV2lPcUIrM3NlcXVyY2VTWVhwTjVRdTgvS1ZBcjlUd0YxNlBQU1pnSk9sSG1EY01rUUlOdUw5NlQvVmFqa3pyWVFZY3FCYWVncUsxNDVQWU1WemdPb3JtemRDSFluQmdBPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgwMTU0NTg0CWZpbGU6Rml0XzEuMC4xMF94NjRfZW4tVVMubXNpCnY4ZnVFN0hkdHZSYTVwaDNBVmJDWFIyQnBvc2tTUU9PNXZScDRmcWFnNSsyTXl5MEpRTlNGQ1MyUCtwOFZZT3FxT3hyQWx5K1ArYUwxcDVTVElLRkJnPT0K",
-      "url": "https://github.com/NoCxdee/fit/releases/download/v1.0.10/Fit_1.0.10_x64_en-US.msi"
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVTV2lPcUIrM3NlcWxQWkNzQ2hQQ0kybzNPZnZRS2JuLzRORUhkaE9Id3BnWW5PMDhFVUlzSUFLaDlXblg4cU4rTjZrdlFpbVNOZnRnLy9wYnlWVHJyd2szRSt0Z1JPVEFvPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgwMTc1NDE3CWZpbGU6Rml0XzEuMC4xMV94NjRfZW4tVVMubXNpCkwrYkxGNGJ2YnBmQjZuM3o0U0J5QkRJZE9oL0QzTGpmK0JqOFYzK25rdWtGYzFuRHRRM3JjMXdFVkRKUmxQUGZudFROdURiTkJFQU45KzNUNUhZeEJRPT0K",
+      "url": "https://github.com/NoCxdee/fit/releases/download/v1.0.11/Fit_1.0.11_x64_en-US.msi"
     }
   }
 }
