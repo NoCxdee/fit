@@ -2755,7 +2755,7 @@ body {
   display: flex;
   flex-direction: column;
   height: 100%;
-  overflow: hidden;
+  overflow: visible;
   flex: 1;
 }
 
@@ -2766,6 +2766,34 @@ body {
   align-items: center;
   justify-content: center;
   padding: var(--space-xl);
+}
+
+.git-panel__no-repo-btn {
+  margin-top: var(--space-md);
+  padding: 8px 16px;
+  background: var(--color-accent-amber);
+  color: var(--color-on-primary);
+  border: none;
+  border-radius: var(--radius-md);
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.git-panel__no-repo-btn:hover:not(:disabled) {
+  filter: brightness(1.1);
+  transform: translateY(-1px);
+}
+
+.git-panel__no-repo-btn:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.git-panel__no-repo-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .git-panel__message {
@@ -4587,6 +4615,9 @@ body {
   color: var(--color-mute);
   cursor: pointer;
   transition: all var(--transition-fast);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .file-drawer__top-tab:hover:not(.file-drawer__top-tab--active) {
@@ -4598,6 +4629,11 @@ body {
   color: var(--color-ink);
   border-color: var(--color-hairline);
   font-weight: 600;
+}
+
+.file-drawer__top-tab--active .file-drawer__badge {
+  background: var(--color-hairline);
+  color: var(--color-ink);
 }
 
 /* ── Diff Sidebar ─────────────────────────────────────────────── */
@@ -5281,4 +5317,182 @@ body {
   50% {
     transform: translateY(-4px);
   }
+}
+
+/* ── Git Dropdown Menu ─────────────────────────────────────────── */
+
+.git-menu-container {
+  position: relative;
+  display: inline-block;
+}
+
+.git-dropdown-menu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 6px;
+  background: var(--color-canvas);
+  border: 1px solid var(--color-hairline);
+  border-radius: var(--radius-md);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+  z-index: 1000;
+  min-width: 170px;
+  padding: 4px 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.git-dropdown-divider {
+  height: 1px;
+  background: var(--color-hairline);
+  margin: 4px 0;
+}
+
+.git-dropdown-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 6px 12px;
+  font-size: 12px;
+  color: var(--color-body);
+  background: transparent;
+  border: none;
+  text-align: left;
+  cursor: pointer;
+  transition: background var(--transition-fast), color var(--transition-fast);
+  gap: 8px;
+}
+
+.git-dropdown-item:hover {
+  background: var(--color-hover);
+  color: var(--color-ink);
+}
+
+.git-dropdown-item__arrow {
+  margin-left: auto;
+  opacity: 0.6;
+  display: flex;
+  align-items: center;
+}
+
+.git-dropdown-submenu {
+  position: absolute;
+  bottom: 0;
+  right: 100%;
+  margin-right: 4px;
+  background: var(--color-canvas);
+  border: 1px solid var(--color-hairline);
+  border-radius: var(--radius-md);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+  z-index: 1001;
+  min-width: 170px;
+  padding: 4px 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Hover bridge to prevent menu from closing when crossing the gap */
+.git-dropdown-submenu::after {
+  content: '';
+  position: absolute;
+  top: -10px;
+  bottom: -10px;
+  left: 100%;
+  width: 10px;
+  background: transparent;
+  z-index: 1002;
+}
+
+/* Modal overlays for inputs */
+.git-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+}
+
+.git-modal {
+  background: var(--color-canvas);
+  border: 1px solid var(--color-hairline);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+  width: 380px;
+  max-width: 90%;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.git-modal__title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-ink);
+  margin: 0;
+}
+
+.git-modal__label {
+  font-size: 11px;
+  color: var(--color-mute);
+  margin-bottom: 4px;
+  display: block;
+}
+
+.git-modal__input {
+  width: 100%;
+  background: rgba(247, 245, 240, 0.04);
+  border: 1px solid var(--color-hairline);
+  border-radius: var(--radius-md);
+  padding: 8px 12px;
+  color: var(--color-ink);
+  font-size: 12px;
+  outline: none;
+  transition: border-color var(--transition-fast);
+}
+
+.git-modal__input:focus {
+  border-color: var(--color-accent-amber);
+}
+
+.git-modal__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.git-modal__btn {
+  padding: 6px 12px;
+  border-radius: var(--radius-md);
+  font-size: 12px;
+  cursor: pointer;
+  border: none;
+  font-weight: 500;
+  transition: background var(--transition-fast);
+}
+
+.git-modal__btn--cancel {
+  background: transparent;
+  color: var(--color-mute);
+}
+
+.git-modal__btn--cancel:hover {
+  background: var(--color-hover);
+  color: var(--color-ink);
+}
+
+.git-modal__btn--confirm {
+  background: var(--color-accent-amber);
+  color: var(--color-on-primary);
+}
+
+.git-modal__btn--confirm:hover {
+  filter: brightness(1.1);
 }

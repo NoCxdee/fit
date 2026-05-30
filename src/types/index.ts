@@ -38,7 +38,7 @@ export interface ShellInfo {
 }
 
 // ── Tabs ─────────────────────────────────────────────────────────
-export type TabType = 'session' | 'editor' | 'preview';
+export type TabType = 'session' | 'editor' | 'preview' | 'diff';
 
 export interface Tab {
   id: string;

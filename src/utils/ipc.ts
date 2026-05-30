@@ -120,6 +120,10 @@ export async function gitDiscardFile(path: string, filePath: string): Promise<vo
   return await invoke<void>('git_discard_file', { path, filePath });
 }
 
+export async function gitRunCommand(path: string, args: string[]): Promise<string> {
+  return await invoke<string>('git_run_command', { path, args });
+}
+
 // ── Updater ──────────────────────────────────────────────────────
 
 export async function checkUpdate(): Promise<{ available: boolean; version: string; body?: string; error?: string }> {

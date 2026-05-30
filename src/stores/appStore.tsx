@@ -71,6 +71,8 @@ function appReducer(state: AppState, action: AppAction): AppState {
         activeSessionId: newSession.id,
         openTabs: [...state.openTabs, newTab],
         activeTabId: newTab.id,
+        fileDrawerOpen: true,
+        drawerTab: 'files',
       };
     }
 
@@ -128,6 +130,8 @@ function appReducer(state: AppState, action: AppAction): AppState {
         gitStatus: null,
         sessions: newSessions,
         openTabs: newTabs,
+        fileDrawerOpen: true,
+        drawerTab: 'files',
       };
     }
 
@@ -529,7 +533,8 @@ function appReducer(state: AppState, action: AppAction): AppState {
         settingsOpen: false,
         aboutOpen: false,
         pendingUpdate: null,
-        drawerTab: action.payload.drawerTab || 'files',
+        fileDrawerOpen: action.payload.activeWorkspaceId ? true : (action.payload.fileDrawerOpen ?? false),
+        drawerTab: action.payload.activeWorkspaceId ? 'files' : (action.payload.drawerTab || 'files'),
         gitStatus: null,
         panelSizes: action.payload.panelSizes || {},
         sttShortcut: action.payload.sttShortcut || 'Control+Space',

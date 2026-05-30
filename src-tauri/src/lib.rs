@@ -146,6 +146,7 @@ pub fn run() {
             commands::git::git_fetch,
             commands::git::git_show_file,
             commands::git::git_discard_file,
+            commands::git::git_run_command,
             commands::clipboard::get_clipboard_files,
             // Speech
             commands::speech::get_model_status,

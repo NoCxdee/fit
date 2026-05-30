@@ -19,13 +19,14 @@ import {
   gitPull, 
   gitFetch, 
   gitDiscardFile,
+  gitRunCommand,
   createFile,
   createDir,
   searchFiles
 } from '../../utils/ipc';
 import type { FileEntry } from '../../types';
 import { ResizeHandle } from './ResizeHandle';
-import { Search, FilePlus2, FolderPlus, RotateCw } from 'lucide-react';
+import { Search, FilePlus2, FolderPlus, RotateCw, Folder, GitBranch, MoreHorizontal, ChevronRight } from 'lucide-react';
 
 interface TreeItemProps {
   entry: FileEntry;
@@ -224,6 +225,32 @@ function GitPanel() {
   const [error, setError] = useState<string | null>(null);
   const [isSpinning, setIsSpinning] = useState(false);
 
+  // Git menu dropdown & submenus
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [activeSubmenu, setActiveSubmenu] = useState<string | null>(null);
+
+  // Input dialog modals
+  const [dialogType, setDialogType] = useState<'clone' | 'checkout' | 'commit-message' | 'branch-create' | 'branch-delete' | 'branch-switch' | 'remote-add' | 'remote-remove' | 'stash-push' | 'tag-create' | 'tag-delete' | null>(null);
+  const [dialogInput1, setDialogInput1] = useState('');
+  const [dialogInput2, setDialogInput2] = useState('');
+  const [dialogLoading, setDialogLoading] = useState(false);
+
+  const menuRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setMenuOpen(false);
+        setActiveSubmenu(null);
+      }
+    };
+    if (menuOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [menuOpen]);
+
   const activeWorkspace = workspaces.find(w => w.id === activeWorkspaceId);
 
   // No more refresh prop — the global App.tsx polling handles git status updates
@@ -263,8 +290,19 @@ function GitPanel() {
   }, [activeWorkspace, dispatch]);
 
   const handleItemClick = useCallback((fileRelPath: string) => {
-    handleOpenFile(fileRelPath);
-  }, [handleOpenFile]);
+    if (!activeWorkspace) return;
+    const absPath = `${activeWorkspace.path}/${fileRelPath}`.replace(/\\/g, '/');
+    const fileName = fileRelPath.substring(fileRelPath.lastIndexOf('/') + 1);
+    dispatch({
+      type: 'OPEN_TAB',
+      payload: {
+        id: `tab-diff-${absPath}`,
+        type: 'diff',
+        title: fileName,
+        filePath: absPath,
+      },
+    });
+  }, [activeWorkspace, dispatch]);
 
   useEffect(() => {
     setCommitMessage('');
@@ -401,6 +439,197 @@ function GitPanel() {
     }
   }, [handleCommit]);
 
+  const handleGitActionNoInput = useCallback(async (actionName: string, args: string[]) => {
+    if (!activeWorkspace) return;
+    setMenuOpen(false);
+    setActiveSubmenu(null);
+    setActionLoading(actionName);
+    try {
+      await gitRunCommand(activeWorkspace.path, args);
+      await refresh();
+      setError(null);
+    } catch (err) {
+      setError(String(err));
+    } finally {
+      setActionLoading(null);
+    }
+  }, [activeWorkspace, refresh]);
+
+  const handleDiscardAll = useCallback(async () => {
+    if (!activeWorkspace) return;
+    setMenuOpen(false);
+    setActiveSubmenu(null);
+    setActionLoading('discard-all');
+    try {
+      await gitRunCommand(activeWorkspace.path, ["checkout", "--", "."]);
+      await gitRunCommand(activeWorkspace.path, ["clean", "-fd"]);
+      await refresh();
+      setError(null);
+    } catch (err) {
+      setError(String(err));
+    } finally {
+      setActionLoading(null);
+    }
+  }, [activeWorkspace, refresh]);
+
+  const handleSync = useCallback(async () => {
+    if (!activeWorkspace) return;
+    setMenuOpen(false);
+    setActiveSubmenu(null);
+    setActionLoading('sync');
+    try {
+      await gitPull(activeWorkspace.path);
+      await gitPush(activeWorkspace.path);
+      await refresh();
+      setError(null);
+    } catch (err) {
+      setError(String(err));
+    } finally {
+      setActionLoading(null);
+    }
+  }, [activeWorkspace, refresh]);
+
+  const handleInitializeRepo = useCallback(async () => {
+    if (!activeWorkspace) return;
+    setActionLoading('init');
+    try {
+      await gitRunCommand(activeWorkspace.path, ["init"]);
+      try {
+        await gitRunCommand(activeWorkspace.path, ["checkout", "-b", "main"]);
+      } catch (e) {
+        // Ignore if checkout fails on empty repo
+      }
+      await refresh();
+      setError(null);
+    } catch (err) {
+      setError(String(err));
+    } finally {
+      setActionLoading(null);
+    }
+  }, [activeWorkspace, refresh]);
+
+  const triggerCommitAction = useCallback(async (type: 'staged' | 'all' | 'amend-staged' | 'amend-all') => {
+    if (!activeWorkspace) return;
+    setMenuOpen(false);
+    setActiveSubmenu(null);
+    if (commitMessage.trim()) {
+      setActionLoading('commit');
+      try {
+        if (type === 'all') {
+          await gitRunCommand(activeWorkspace.path, ["commit", "-a", "-m", commitMessage.trim()]);
+        } else if (type === 'amend-staged') {
+          await gitRunCommand(activeWorkspace.path, ["commit", "--amend", "-m", commitMessage.trim()]);
+        } else if (type === 'amend-all') {
+          await gitRunCommand(activeWorkspace.path, ["commit", "-a", "--amend", "-m", commitMessage.trim()]);
+        } else {
+          await gitCommit(activeWorkspace.path, commitMessage.trim());
+        }
+        setCommitMessage('');
+        await refresh();
+        setError(null);
+      } catch (err) {
+        setError(String(err));
+      } finally {
+        setActionLoading(null);
+      }
+    } else {
+      setDialogType('commit-message');
+      setDialogInput1('');
+      setDialogInput2(type);
+    }
+  }, [activeWorkspace, commitMessage, refresh]);
+
+  const handleDialogSubmit = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (!activeWorkspace) return;
+    setDialogLoading(true);
+    setError(null);
+    try {
+      switch (dialogType) {
+        case 'clone': {
+          if (!dialogInput1.trim() || !dialogInput2.trim()) {
+            throw new Error("URL and directory name are required");
+          }
+          const parentDir = activeWorkspace.path.substring(0, Math.max(activeWorkspace.path.lastIndexOf('/'), activeWorkspace.path.lastIndexOf('\\')));
+          await gitRunCommand(parentDir, ["clone", dialogInput1.trim(), dialogInput2.trim()]);
+          break;
+        }
+        case 'checkout': {
+          if (!dialogInput1.trim()) throw new Error("Branch/Ref is required");
+          await gitRunCommand(activeWorkspace.path, ["checkout", dialogInput1.trim()]);
+          break;
+        }
+        case 'branch-create': {
+          if (!dialogInput1.trim()) throw new Error("Branch name is required");
+          await gitRunCommand(activeWorkspace.path, ["checkout", "-b", dialogInput1.trim()]);
+          break;
+        }
+        case 'branch-delete': {
+          if (!dialogInput1.trim()) throw new Error("Branch name is required");
+          await gitRunCommand(activeWorkspace.path, ["branch", "-d", dialogInput1.trim()]);
+          break;
+        }
+        case 'branch-switch': {
+          if (!dialogInput1.trim()) throw new Error("Branch name is required");
+          await gitRunCommand(activeWorkspace.path, ["checkout", dialogInput1.trim()]);
+          break;
+        }
+        case 'remote-add': {
+          if (!dialogInput1.trim() || !dialogInput2.trim()) {
+            throw new Error("Name and URL are required");
+          }
+          await gitRunCommand(activeWorkspace.path, ["remote", "add", dialogInput1.trim(), dialogInput2.trim()]);
+          break;
+        }
+        case 'remote-remove': {
+          if (!dialogInput1.trim()) throw new Error("Remote name is required");
+          await gitRunCommand(activeWorkspace.path, ["remote", "remove", dialogInput1.trim()]);
+          break;
+        }
+        case 'stash-push': {
+          const msg = dialogInput1.trim();
+          const args = msg ? ["stash", "push", "-m", msg] : ["stash", "push"];
+          await gitRunCommand(activeWorkspace.path, args);
+          break;
+        }
+        case 'tag-create': {
+          if (!dialogInput1.trim()) throw new Error("Tag name is required");
+          const msg = dialogInput2.trim();
+          const args = msg ? ["tag", "-a", dialogInput1.trim(), "-m", msg] : ["tag", dialogInput1.trim()];
+          await gitRunCommand(activeWorkspace.path, args);
+          break;
+        }
+        case 'tag-delete': {
+          if (!dialogInput1.trim()) throw new Error("Tag name is required");
+          await gitRunCommand(activeWorkspace.path, ["tag", "-d", dialogInput1.trim()]);
+          break;
+        }
+        case 'commit-message': {
+          if (!dialogInput1.trim()) throw new Error("Commit message is required");
+          const commitType = dialogInput2;
+          if (commitType === 'all') {
+            await gitRunCommand(activeWorkspace.path, ["commit", "-a", "-m", dialogInput1.trim()]);
+          } else if (commitType === 'amend-staged') {
+            await gitRunCommand(activeWorkspace.path, ["commit", "--amend", "-m", dialogInput1.trim()]);
+          } else if (commitType === 'amend-all') {
+            await gitRunCommand(activeWorkspace.path, ["commit", "-a", "--amend", "-m", dialogInput1.trim()]);
+          } else {
+            await gitCommit(activeWorkspace.path, dialogInput1.trim());
+          }
+          break;
+        }
+      }
+      setDialogType(null);
+      setDialogInput1('');
+      setDialogInput2('');
+      await refresh();
+    } catch (err) {
+      setError(String(err));
+    } finally {
+      setDialogLoading(false);
+    }
+  };
+
   if (!activeWorkspace) {
     return (
       <div className="git-panel git-panel--empty">
@@ -431,6 +660,13 @@ function GitPanel() {
           <p className="git-panel__no-repo-subtitle">
             {t('git.noRepoSubtitle')}
           </p>
+          <button 
+            className="git-panel__no-repo-btn"
+            onClick={handleInitializeRepo}
+            disabled={!!actionLoading}
+          >
+            {actionLoading === 'init' ? t('git.loading') : t('git.initialize')}
+          </button>
         </div>
       </div>
     );
@@ -441,7 +677,6 @@ function GitPanel() {
   return (
     <div className="git-panel">
       <div className="git-panel__header">
-
         <div className="git-panel__actions">
           <button className="git-panel__header-btn" onClick={handlePull} disabled={!!actionLoading} title={t('git.pull')}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -472,6 +707,188 @@ function GitPanel() {
               <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
             </svg>
           </button>
+          
+          <div className="git-menu-container" ref={menuRef}>
+            <button className="git-panel__header-btn" onClick={() => setMenuOpen(!menuOpen)} title="Git Actions">
+              <MoreHorizontal size={14} />
+            </button>
+            {menuOpen && (
+              <div className="git-dropdown-menu">
+                <button className="git-dropdown-item" onClick={() => { setMenuOpen(false); handlePull(); }}>
+                  Pull
+                </button>
+                <button className="git-dropdown-item" onClick={() => { setMenuOpen(false); handlePush(); }}>
+                  Push
+                </button>
+                <button className="git-dropdown-item" onClick={() => { setMenuOpen(false); setDialogType('clone'); }}>
+                  Clone
+                </button>
+                <button className="git-dropdown-item" onClick={() => { setMenuOpen(false); setDialogType('checkout'); }}>
+                  Checkout to...
+                </button>
+                <button className="git-dropdown-item" onClick={() => { setMenuOpen(false); handleFetch(); }}>
+                  Fetch
+                </button>
+                
+                <div className="git-dropdown-divider" />
+                
+                <div 
+                  className="git-dropdown-item"
+                  onMouseEnter={() => setActiveSubmenu('commit')}
+                  onMouseLeave={() => setActiveSubmenu(null)}
+                  style={{ position: 'relative' }}
+                >
+                  <span>Commit</span>
+                  <span className="git-dropdown-item__arrow"><ChevronRight size={12} /></span>
+                  {activeSubmenu === 'commit' && (
+                    <div className="git-dropdown-submenu">
+                      <button className="git-dropdown-item" onClick={() => triggerCommitAction('staged')}>
+                        Commit Staged
+                      </button>
+                      <button className="git-dropdown-item" onClick={() => triggerCommitAction('all')}>
+                        Commit All
+                      </button>
+                      <button className="git-dropdown-item" onClick={() => triggerCommitAction('amend-staged')}>
+                        Commit Staged (Amend)
+                      </button>
+                      <button className="git-dropdown-item" onClick={() => triggerCommitAction('amend-all')}>
+                        Commit All (Amend)
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                <div 
+                  className="git-dropdown-item"
+                  onMouseEnter={() => setActiveSubmenu('changes')}
+                  onMouseLeave={() => setActiveSubmenu(null)}
+                  style={{ position: 'relative' }}
+                >
+                  <span>Changes</span>
+                  <span className="git-dropdown-item__arrow"><ChevronRight size={12} /></span>
+                  {activeSubmenu === 'changes' && (
+                    <div className="git-dropdown-submenu">
+                      <button className="git-dropdown-item" onClick={() => { setMenuOpen(false); handleStageAll(); }}>
+                        Stage All
+                      </button>
+                      <button className="git-dropdown-item" onClick={() => { setMenuOpen(false); handleUnstageAll(); }}>
+                        Unstage All
+                      </button>
+                      <button className="git-dropdown-item" onClick={handleDiscardAll}>
+                        Discard All
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                <div 
+                  className="git-dropdown-item"
+                  onMouseEnter={() => setActiveSubmenu('pull-push')}
+                  onMouseLeave={() => setActiveSubmenu(null)}
+                  style={{ position: 'relative' }}
+                >
+                  <span>Pull, Push</span>
+                  <span className="git-dropdown-item__arrow"><ChevronRight size={12} /></span>
+                  {activeSubmenu === 'pull-push' && (
+                    <div className="git-dropdown-submenu">
+                      <button className="git-dropdown-item" onClick={() => { setMenuOpen(false); handlePull(); }}>
+                        Pull
+                      </button>
+                      <button className="git-dropdown-item" onClick={() => { setMenuOpen(false); handlePush(); }}>
+                        Push
+                      </button>
+                      <button className="git-dropdown-item" onClick={handleSync}>
+                        Sync
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                <div 
+                  className="git-dropdown-item"
+                  onMouseEnter={() => setActiveSubmenu('branch')}
+                  onMouseLeave={() => setActiveSubmenu(null)}
+                  style={{ position: 'relative' }}
+                >
+                  <span>Branch</span>
+                  <span className="git-dropdown-item__arrow"><ChevronRight size={12} /></span>
+                  {activeSubmenu === 'branch' && (
+                    <div className="git-dropdown-submenu">
+                      <button className="git-dropdown-item" onClick={() => { setMenuOpen(false); setDialogType('branch-create'); }}>
+                        Create Branch...
+                      </button>
+                      <button className="git-dropdown-item" onClick={() => { setMenuOpen(false); setDialogType('branch-delete'); }}>
+                        Delete Branch...
+                      </button>
+                      <button className="git-dropdown-item" onClick={() => { setMenuOpen(false); setDialogType('branch-switch'); }}>
+                        Switch to Branch...
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                <div 
+                  className="git-dropdown-item"
+                  onMouseEnter={() => setActiveSubmenu('remote')}
+                  onMouseLeave={() => setActiveSubmenu(null)}
+                  style={{ position: 'relative' }}
+                >
+                  <span>Remote</span>
+                  <span className="git-dropdown-item__arrow"><ChevronRight size={12} /></span>
+                  {activeSubmenu === 'remote' && (
+                    <div className="git-dropdown-submenu">
+                      <button className="git-dropdown-item" onClick={() => { setMenuOpen(false); setDialogType('remote-add'); }}>
+                        Add Remote...
+                      </button>
+                      <button className="git-dropdown-item" onClick={() => { setMenuOpen(false); setDialogType('remote-remove'); }}>
+                        Remove Remote...
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                <div 
+                  className="git-dropdown-item"
+                  onMouseEnter={() => setActiveSubmenu('stash')}
+                  onMouseLeave={() => setActiveSubmenu(null)}
+                  style={{ position: 'relative' }}
+                >
+                  <span>Stash</span>
+                  <span className="git-dropdown-item__arrow"><ChevronRight size={12} /></span>
+                  {activeSubmenu === 'stash' && (
+                    <div className="git-dropdown-submenu">
+                      <button className="git-dropdown-item" onClick={() => { setMenuOpen(false); setDialogType('stash-push'); }}>
+                        Stash Changes...
+                      </button>
+                      <button className="git-dropdown-item" onClick={() => handleGitActionNoInput('pop-stash', ['stash', 'pop'])}>
+                        Pop Stash
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                <div 
+                  className="git-dropdown-item"
+                  onMouseEnter={() => setActiveSubmenu('tags')}
+                  onMouseLeave={() => setActiveSubmenu(null)}
+                  style={{ position: 'relative' }}
+                >
+                  <span>Tags</span>
+                  <span className="git-dropdown-item__arrow"><ChevronRight size={12} /></span>
+                  {activeSubmenu === 'tags' && (
+                    <div className="git-dropdown-submenu">
+                      <button className="git-dropdown-item" onClick={() => { setMenuOpen(false); setDialogType('tag-create'); }}>
+                        Create Tag...
+                      </button>
+                      <button className="git-dropdown-item" onClick={() => { setMenuOpen(false); setDialogType('tag-delete'); }}>
+                        Delete Tag...
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
@@ -618,6 +1035,190 @@ function GitPanel() {
           </div>
         )}
       </div>
+
+      {dialogType && (
+        <div className="git-modal-overlay">
+          <form className="git-modal" onSubmit={handleDialogSubmit}>
+            <h4 className="git-modal__title">
+              {dialogType === 'clone' && "Clone Repository"}
+              {dialogType === 'checkout' && "Checkout Branch / Ref"}
+              {dialogType === 'commit-message' && "Commit Message"}
+              {dialogType === 'branch-create' && "Create Branch"}
+              {dialogType === 'branch-delete' && "Delete Branch"}
+              {dialogType === 'branch-switch' && "Switch Branch"}
+              {dialogType === 'remote-add' && "Add Remote"}
+              {dialogType === 'remote-remove' && "Remove Remote"}
+              {dialogType === 'stash-push' && "Stash Changes"}
+              {dialogType === 'tag-create' && "Create Tag"}
+              {dialogType === 'tag-delete' && "Delete Tag"}
+            </h4>
+            
+            {dialogType === 'clone' && (
+              <>
+                <div>
+                  <label className="git-modal__label">Repository URL</label>
+                  <input 
+                    className="git-modal__input" 
+                    placeholder="https://github.com/user/repo.git"
+                    value={dialogInput1} 
+                    onChange={e => setDialogInput1(e.target.value)}
+                    required
+                    autoFocus
+                  />
+                </div>
+                <div>
+                  <label className="git-modal__label">Directory Name</label>
+                  <input 
+                    className="git-modal__input" 
+                    placeholder="my-project"
+                    value={dialogInput2} 
+                    onChange={e => setDialogInput2(e.target.value)}
+                    required
+                  />
+                </div>
+              </>
+            )}
+
+            {dialogType === 'commit-message' && (
+              <div>
+                <label className="git-modal__label">Message</label>
+                <input 
+                  className="git-modal__input" 
+                  placeholder="feat: add something new"
+                  value={dialogInput1} 
+                  onChange={e => setDialogInput1(e.target.value)}
+                  required
+                  autoFocus
+                />
+              </div>
+            )}
+
+            {(dialogType === 'checkout' || dialogType === 'branch-create' || dialogType === 'branch-delete' || dialogType === 'branch-switch') && (
+              <div>
+                <label className="git-modal__label">Branch Name</label>
+                <input 
+                  className="git-modal__input" 
+                  placeholder="main or feature-branch"
+                  value={dialogInput1} 
+                  onChange={e => setDialogInput1(e.target.value)}
+                  required
+                  autoFocus
+                />
+              </div>
+            )}
+
+            {dialogType === 'remote-add' && (
+              <>
+                <div>
+                  <label className="git-modal__label">Remote Name</label>
+                  <input 
+                    className="git-modal__input" 
+                    placeholder="origin"
+                    value={dialogInput1} 
+                    onChange={e => setDialogInput1(e.target.value)}
+                    required
+                    autoFocus
+                  />
+                </div>
+                <div>
+                  <label className="git-modal__label">Remote URL</label>
+                  <input 
+                    className="git-modal__input" 
+                    placeholder="https://github.com/user/repo.git"
+                    value={dialogInput2} 
+                    onChange={e => setDialogInput2(e.target.value)}
+                    required
+                  />
+                </div>
+              </>
+            )}
+
+            {dialogType === 'remote-remove' && (
+              <div>
+                <label className="git-modal__label">Remote Name</label>
+                <input 
+                  className="git-modal__input" 
+                  placeholder="origin"
+                  value={dialogInput1} 
+                  onChange={e => setDialogInput1(e.target.value)}
+                  required
+                  autoFocus
+                />
+              </div>
+            )}
+
+            {dialogType === 'stash-push' && (
+              <div>
+                <label className="git-modal__label">Stash Message (Optional)</label>
+                <input 
+                  className="git-modal__input" 
+                  placeholder="Work in progress"
+                  value={dialogInput1} 
+                  onChange={e => setDialogInput1(e.target.value)}
+                  autoFocus
+                />
+              </div>
+            )}
+
+            {dialogType === 'tag-create' && (
+              <>
+                <div>
+                  <label className="git-modal__label">Tag Name</label>
+                  <input 
+                    className="git-modal__input" 
+                    placeholder="v1.0.0"
+                    value={dialogInput1} 
+                    onChange={e => setDialogInput1(e.target.value)}
+                    required
+                    autoFocus
+                  />
+                </div>
+                <div>
+                  <label className="git-modal__label">Message (Optional)</label>
+                  <input 
+                    className="git-modal__input" 
+                    placeholder="Release v1.0.0"
+                    value={dialogInput2} 
+                    onChange={e => setDialogInput2(e.target.value)}
+                  />
+                </div>
+              </>
+            )}
+
+            {dialogType === 'tag-delete' && (
+              <div>
+                <label className="git-modal__label">Tag Name</label>
+                <input 
+                  className="git-modal__input" 
+                  placeholder="v1.0.0"
+                  value={dialogInput1} 
+                  onChange={e => setDialogInput1(e.target.value)}
+                  required
+                  autoFocus
+                />
+              </div>
+            )}
+
+            <div className="git-modal__actions">
+              <button 
+                type="button" 
+                className="git-modal__btn git-modal__btn--cancel" 
+                onClick={() => { setDialogType(null); setDialogInput1(''); setDialogInput2(''); }}
+                disabled={dialogLoading}
+              >
+                Cancel
+              </button>
+              <button 
+                type="submit" 
+                className="git-modal__btn git-modal__btn--confirm"
+                disabled={dialogLoading}
+              >
+                {dialogLoading ? "Executing..." : "Confirm"}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
     </div>
   );
 }
@@ -789,16 +1390,32 @@ export function FileDrawer() {
   }, [searchQuery, activeWorkspace]);
 
   const handleFileClick = useCallback((entry: FileEntry) => {
-    dispatch({
-      type: 'OPEN_TAB',
-      payload: {
-        id: `tab-editor-${entry.path}`,
-        type: 'editor',
-        title: entry.name,
-        filePath: entry.path,
-      },
-    });
-  }, [dispatch]);
+    const normalizePath = (p: string) => p.replace(/\\/g, '/');
+    const normalizedPath = normalizePath(entry.path);
+    const isModified = modifiedPaths.has(normalizedPath);
+
+    if (isModified) {
+      dispatch({
+        type: 'OPEN_TAB',
+        payload: {
+          id: `tab-diff-${entry.path}`,
+          type: 'diff',
+          title: entry.name,
+          filePath: entry.path,
+        },
+      });
+    } else {
+      dispatch({
+        type: 'OPEN_TAB',
+        payload: {
+          id: `tab-editor-${entry.path}`,
+          type: 'editor',
+          title: entry.name,
+          filePath: entry.path,
+        },
+      });
+    }
+  }, [dispatch, modifiedPaths]);
 
   const handleCreateItemSubmit = async () => {
     if (!activeWorkspace || !newItemName.trim()) {
@@ -863,20 +1480,25 @@ export function FileDrawer() {
       {/* Top Capsule Switcher */}
       <div className="file-drawer__top-tabs">
         <button
-          className={`file-drawer__top-tab ${drawerTab === 'git' ? 'file-drawer__top-tab--active' : ''}`}
-          onClick={() => dispatch({ type: 'SET_DRAWER_TAB', payload: 'git' })}
-        >
-          {changesText}
-        </button>
-        <button
           className={`file-drawer__top-tab ${drawerTab === 'files' ? 'file-drawer__top-tab--active' : ''}`}
           onClick={() => dispatch({ type: 'SET_DRAWER_TAB', payload: 'files' })}
         >
-          {t('drawer.allFiles')}
+          <Folder size={12} strokeWidth={2} />
+          <span>{t('drawer.files')}</span>
+        </button>
+        <button
+          className={`file-drawer__top-tab ${drawerTab === 'git' ? 'file-drawer__top-tab--active' : ''}`}
+          onClick={() => dispatch({ type: 'SET_DRAWER_TAB', payload: 'git' })}
+        >
+          <GitBranch size={12} strokeWidth={2} />
+          <span>{t('drawer.sourceControl')}</span>
+          {totalChanges > 0 && (
+            <span className="file-drawer__badge">{totalChanges}</span>
+          )}
         </button>
       </div>
 
-      <div className="file-drawer__content" style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, overflow: 'hidden' }}>
+      <div className="file-drawer__content" style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, overflow: 'visible' }}>
         {drawerTab === 'files' ? (
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, overflow: 'hidden' }}>
             {activeWorkspace && (

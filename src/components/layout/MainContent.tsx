@@ -7,6 +7,7 @@ import { useTranslation } from '../../i18n';
 import { TerminalGrid } from '../terminal/TerminalGrid';
 import { CodeEditor } from '../editor/CodeEditor';
 import { LivePreview } from '../preview/LivePreview';
+import { DiffView } from '../editor/DiffView';
 import { Terminal } from 'lucide-react';
 
 export function MainContent() {
@@ -49,6 +50,13 @@ export function MainContent() {
             )}
             {tab.type === 'editor' && tab.filePath && (
               <CodeEditor
+                filePath={tab.filePath}
+                fileName={tab.title}
+                tabId={tab.id}
+              />
+            )}
+            {tab.type === 'diff' && tab.filePath && (
+              <DiffView
                 filePath={tab.filePath}
                 fileName={tab.title}
                 tabId={tab.id}

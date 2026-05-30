@@ -428,3 +428,10 @@ pub fn git_discard_file(path: String, filePath: String) -> Result<(), String> {
         Ok(())
     }
 }
+
+#[tauri::command]
+pub fn git_run_command(path: String, args: Vec<String>) -> Result<String, String> {
+    let args_slices: Vec<&str> = args.iter().map(|s| s.as_str()).collect();
+    run_git_cmd(&path, &args_slices)
+}
+

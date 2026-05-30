@@ -27,7 +27,7 @@ export function AboutModal() {
           <div className="about-modal__logo-info">
             <h1 className="about-modal__app-name">{t('app.name')}</h1>
             <p className="about-modal__app-desc">{t('app.description')}</p>
-            <span className="about-modal__app-version">v1.0.10</span>
+            <span className="about-modal__app-version">v1.0.11</span>
           </div>
         </div>
 
@@ -35,7 +35,7 @@ export function AboutModal() {
         <div className="about-modal__details">
           <div className="about-modal__row">
             <span className="about-modal__label">{t('about.build')}</span>
-            <span className="about-modal__value">Windows &middot; x86_64 &middot; v1.0.10</span>
+            <span className="about-modal__value">Windows &middot; x86_64 &middot; v1.0.11</span>
           </div>
 
           <div className="about-modal__row">
