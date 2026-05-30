@@ -199,5 +199,3 @@ export async function unloadModel(): Promise<void> {
 export async function setSystemMute(mute: boolean): Promise<void> {
   return await invoke<void>('set_system_mute', { mute });
 }
-
-

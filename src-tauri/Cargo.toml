@@ -1,6 +1,6 @@
 [package]
 name = "fit"
-version = "1.0.9"
+version = "1.0.10"
 description = "Fit — Ultra-lightweight agentic development environment"
 authors = ["you"]
 license = "MIT"
@@ -30,6 +30,7 @@ dirs = "6"
 uuid = { version = "1", features = ["v4"] }
 windows-sys = { version = "0.52", features = ["Win32_Foundation", "Win32_System_DataExchange", "Win32_System_Memory", "Win32_UI_Shell"] }
 reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "stream"] }
+similar = "2"
 
 
 [profile.release]

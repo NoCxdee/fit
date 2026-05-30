@@ -38,7 +38,7 @@ export interface ShellInfo {
 }
 
 // ── Tabs ─────────────────────────────────────────────────────────
-export type TabType = 'session' | 'editor' | 'preview' | 'diff';
+export type TabType = 'session' | 'editor' | 'preview';
 
 export interface Tab {
   id: string;
@@ -88,6 +88,8 @@ export interface GitFileStatus {
   path: string;
   name: string;
   status: string; // 'modified' | 'added' | 'deleted' | 'renamed' | 'copied' | 'untracked' etc.
+  additions?: number;
+  deletions?: number;
 }
 
 export interface GitCommitInfo {
@@ -103,6 +105,7 @@ export interface GitStatusResult {
   staged: GitFileStatus[];
   unstaged: GitFileStatus[];
   aheadCommits: GitCommitInfo[];
+  hash: string;
 }
 
 // ── App State ────────────────────────────────────────────────────
@@ -121,8 +124,6 @@ export interface AppState {
   settingsOpen: boolean;
   aboutOpen: boolean;
   pendingUpdate: { version: string; body?: string } | null;
-  diffSidebarOpen: boolean;
-  diffFilePath: string | null;
   sttShortcut: string;
   sttMicId: string;
   sttVolume: number;
@@ -161,9 +162,6 @@ export type AppAction =
   | { type: 'SET_FILE_DRAWER_OPEN'; payload: boolean }
   | { type: 'SET_DRAWER_TAB'; payload: 'files' | 'git' }
   | { type: 'SET_GIT_STATUS'; payload: GitStatusResult | null }
-  | { type: 'TOGGLE_DIFF_SIDEBAR' }
-  | { type: 'SET_DIFF_SIDEBAR_OPEN'; payload: boolean }
-  | { type: 'SET_DIFF_FILE_PATH'; payload: string | null }
   | { type: 'SET_PANEL_SIZES'; payload: { key: string; sizes: number[] } }
   | { type: 'SET_STT_SHORTCUT'; payload: string }
   | { type: 'SET_STT_MIC_ID'; payload: string }

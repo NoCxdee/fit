@@ -9,7 +9,6 @@ import { SessionPanel } from './components/layout/SessionPanel';
 import { TitleBar } from './components/layout/TitleBar';
 import { MainContent } from './components/layout/MainContent';
 import { FileDrawer } from './components/layout/FileDrawer';
-import { DiffSidebar } from './components/layout/DiffSidebar';
 import { SettingsModal } from './components/layout/SettingsModal';
 import { AboutModal } from './components/layout/AboutModal';
 import { UpdateModal } from './components/layout/UpdateModal';
@@ -515,6 +514,7 @@ export function App() {
   }, [dispatch]);
 
   // Save state on change (immediate for critical changes, debounced for panel resizes)
+  // gitStatus is excluded from saves — it's transient and reset on load
   useEffect(() => {
     if (!initialized.current) {
       lastStateRef.current = state;
@@ -523,6 +523,34 @@ export function App() {
 
     const prevState = lastStateRef.current;
     lastStateRef.current = state;
+
+    // Skip save entirely if ONLY gitStatus changed
+    if (prevState.gitStatus !== state.gitStatus) {
+      // Check if anything else changed too
+      const otherChanged =
+        prevState.workspaces !== state.workspaces ||
+        prevState.activeWorkspaceId !== state.activeWorkspaceId ||
+        prevState.sessions !== state.sessions ||
+        prevState.activeSessionId !== state.activeSessionId ||
+        prevState.openTabs !== state.openTabs ||
+        prevState.activeTabId !== state.activeTabId ||
+        prevState.fileDrawerOpen !== state.fileDrawerOpen ||
+        prevState.panelSizes !== state.panelSizes ||
+        prevState.drawerTab !== state.drawerTab ||
+        prevState.useWebGl !== state.useWebGl ||
+        prevState.sttShortcut !== state.sttShortcut ||
+        prevState.sttMicId !== state.sttMicId ||
+        prevState.sttVolume !== state.sttVolume ||
+        prevState.sttPushToTalk !== state.sttPushToTalk ||
+        prevState.sttAutoUnload !== state.sttAutoUnload ||
+        prevState.sttOverlayPos !== state.sttOverlayPos ||
+        prevState.sttPasteMethod !== state.sttPasteMethod ||
+        prevState.sttMuteSystem !== state.sttMuteSystem;
+      if (!otherChanged) return; // gitStatus only — skip save
+    }
+
+    // Exclude transient state from persistence
+    const { gitStatus: _gs, settingsOpen: _so, aboutOpen: _ao, pendingUpdate: _pu, inspectorMode: _im, capturedElement: _ce, ...stateToSave } = state;
 
     // Check if anything other than panelSizes changed
     const isCriticalChange =
@@ -535,13 +563,13 @@ export function App() {
       prevState.fileDrawerOpen !== state.fileDrawerOpen;
 
     if (isCriticalChange) {
-      saveState(state).catch(err => console.error('Failed to save state immediately:', err));
+      saveState(stateToSave as any).catch(err => console.error('Failed to save state immediately:', err));
       return;
     }
 
     // Debounce saving only for non-critical changes (e.g. panel resizes)
     const timeoutId = setTimeout(() => {
-      saveState(state).catch(err => console.error('Failed to save state:', err));
+      saveState(stateToSave as any).catch(err => console.error('Failed to save state:', err));
     }, 500);
 
     return () => clearTimeout(timeoutId);
@@ -586,6 +614,7 @@ export function App() {
   }, [state.activeWorkspaceId, state.workspaces]);
 
   // Poll Git status for the active workspace globally
+  // Adaptive polling: 5s when git/diff panel visible, 15s otherwise
   useEffect(() => {
     const activeWorkspaceId = state.activeWorkspaceId;
     const activeWorkspace = state.workspaces.find(w => w.id === activeWorkspaceId);
@@ -595,8 +624,11 @@ export function App() {
     }
 
     let isMounted = true;
+    let isPolling = false; // In-flight guard
 
     async function queryStatus() {
+      if (isPolling) return; // Skip if previous call is still in-flight
+      isPolling = true;
       try {
         const res = await gitStatus(activeWorkspace!.path);
         if (isMounted) {
@@ -604,20 +636,24 @@ export function App() {
         }
       } catch (err) {
         console.error('Failed to query git status globally:', err);
+      } finally {
+        isPolling = false;
       }
     }
 
     // Query status immediately
     queryStatus();
 
-    // Set up background status polling every 5 seconds
-    const interval = setInterval(queryStatus, 5000);
+    // Adaptive interval: faster when git UI is visible
+    const isGitVisible = state.fileDrawerOpen && state.drawerTab === 'git';
+    const pollInterval = isGitVisible ? 5000 : 15000;
+    const interval = setInterval(queryStatus, pollInterval);
 
     return () => {
       isMounted = false;
       clearInterval(interval);
     };
-  }, [state.activeWorkspaceId, state.workspaces, dispatch]);
+  }, [state.activeWorkspaceId, state.workspaces, state.fileDrawerOpen, state.drawerTab, dispatch]);
 
   // Global Keyboard Shortcuts (Ctrl+T for terminal, Ctrl+P for preview)
   useEffect(() => {
@@ -707,11 +743,6 @@ export function App() {
           </div>
         ) : (
           <WelcomeScreen />
-        )}
-
-        {/* Column 4: Diff Sidebar */}
-        {state.activeWorkspaceId && (
-          <DiffSidebar />
         )}
 
         {/* Column 5: File Drawer (Right Sidebar) */}

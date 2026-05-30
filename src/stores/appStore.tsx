@@ -1,10 +1,11 @@
 /* ================================================================
-   Fit — App Store (React Context + useReducer)
-   Global state management — zero external dependencies
+   Fit — App Store (useSyncExternalStore + Selectors)
+   Global state management with granular re-render control.
+   Zero external dependencies.
    ================================================================ */
 
-import { createContext, useContext, useReducer, type Dispatch, type ReactNode } from 'react';
-import type { AppState, AppAction } from '../types';
+import { useSyncExternalStore, useRef, type Dispatch, type ReactNode, createContext, useContext } from 'react';
+import type { AppState, AppAction, GitStatusResult, Workspace, Session, Tab } from '../types';
 import { generateId } from '../utils/generateId';
 
 // ── Initial State ────────────────────────────────────────────────
@@ -19,12 +20,10 @@ const initialState: AppState = {
   drawerTab: 'files',
   gitStatus: null,
   panelSizes: {},
-  useWebGl: false,
+  useWebGl: true,
   settingsOpen: false,
   aboutOpen: false,
   pendingUpdate: null,
-  diffSidebarOpen: false,
-  diffFilePath: null,
   sttShortcut: 'Control+Space',
   sttMicId: 'default',
   sttVolume: 1,
@@ -195,8 +194,6 @@ function appReducer(state: AppState, action: AppAction): AppState {
         activeTabId: nextActiveTabId,
         gitStatus: null,
         fileDrawerOpen: nextActiveWorkspaceId === null ? false : state.fileDrawerOpen,
-        diffSidebarOpen: nextActiveWorkspaceId === null ? false : state.diffSidebarOpen,
-        diffFilePath: nextActiveWorkspaceId === null ? null : state.diffFilePath,
       };
     }
 
@@ -439,29 +436,15 @@ function appReducer(state: AppState, action: AppAction): AppState {
     case 'SET_DRAWER_TAB':
       return { ...state, drawerTab: action.payload };
 
-    case 'SET_GIT_STATUS':
-      if (JSON.stringify(state.gitStatus) === JSON.stringify(action.payload)) {
+    case 'SET_GIT_STATUS': {
+      // Fast hash comparison to avoid unnecessary state updates
+      const prevHash = state.gitStatus?.hash;
+      const newHash = action.payload?.hash;
+      if (prevHash && newHash && prevHash === newHash) {
         return state;
       }
       return { ...state, gitStatus: action.payload };
-
-    case 'TOGGLE_DIFF_SIDEBAR': {
-      if (!state.diffSidebarOpen) {
-        return { ...state, diffSidebarOpen: true, diffFilePath: null };
-      } else {
-        if (state.diffFilePath !== null) {
-          return { ...state, diffFilePath: null };
-        } else {
-          return { ...state, diffSidebarOpen: false };
-        }
-      }
     }
-
-    case 'SET_DIFF_SIDEBAR_OPEN':
-      return { ...state, diffSidebarOpen: action.payload };
-
-    case 'SET_DIFF_FILE_PATH':
-      return { ...state, diffFilePath: action.payload };
 
     case 'SET_PANEL_SIZES':
       return {
@@ -542,14 +525,12 @@ function appReducer(state: AppState, action: AppAction): AppState {
       return {
         ...action.payload,
         openTabs: migratedTabs,
-        useWebGl: action.payload.useWebGl !== undefined ? action.payload.useWebGl : false,
+        useWebGl: action.payload.useWebGl !== undefined ? action.payload.useWebGl : true,
         settingsOpen: false,
         aboutOpen: false,
         pendingUpdate: null,
         drawerTab: action.payload.drawerTab || 'files',
         gitStatus: null,
-        diffSidebarOpen: false,
-        diffFilePath: null,
         panelSizes: action.payload.panelSizes || {},
         sttShortcut: action.payload.sttShortcut || 'Control+Space',
         sttMicId: action.payload.sttMicId || 'default',
@@ -567,26 +548,129 @@ function appReducer(state: AppState, action: AppAction): AppState {
   }
 }
 
-// ── Context ──────────────────────────────────────────────────────
-const AppStateContext = createContext<AppState>(initialState);
-const AppDispatchContext = createContext<Dispatch<AppAction>>(() => { });
+// ── External Store ───────────────────────────────────────────────
+// Singleton store that works with useSyncExternalStore for granular
+// re-render control. Components only re-render when their selected
+// slice actually changes.
+
+class AppStore {
+  private _state: AppState;
+  private _listeners: Set<() => void> = new Set();
+
+  constructor(initial: AppState) {
+    this._state = initial;
+  }
+
+  getState = (): AppState => {
+    return this._state;
+  };
+
+  dispatch = (action: AppAction): void => {
+    this._state = appReducer(this._state, action);
+    this._listeners.forEach(l => l());
+  };
+
+  subscribe = (listener: () => void): (() => void) => {
+    this._listeners.add(listener);
+    return () => {
+      this._listeners.delete(listener);
+    };
+  };
+}
+
+const store = new AppStore(initialState);
+
+// ── Granular Selector Hook ───────────────────────────────────────
+// Uses useSyncExternalStore with referential equality check.
+// Components only re-render when the selector returns a different value.
+
+export function useAppSelector<T>(selector: (s: AppState) => T): T {
+  const selectorRef = useRef(selector);
+  selectorRef.current = selector;
+
+  const lastValueRef = useRef<T | undefined>(undefined);
+  const getSnapshot = () => {
+    const next = selectorRef.current(store.getState());
+    // For primitives, strict equality works. For objects/arrays,
+    // the selector should return the same reference when unchanged
+    // (which the reducer already guarantees via spread).
+    if (lastValueRef.current !== undefined && Object.is(lastValueRef.current, next)) {
+      return lastValueRef.current;
+    }
+    lastValueRef.current = next;
+    return next;
+  };
+
+  return useSyncExternalStore(store.subscribe, getSnapshot);
+}
+
+// ── Convenience Selector Hooks ───────────────────────────────────
+// Pre-built selectors for the most commonly accessed state slices.
+// These provide stable references and minimal re-renders.
+
+export function useGitStatus(): GitStatusResult | null {
+  return useAppSelector(s => s.gitStatus);
+}
+
+export function useActiveWorkspaceId(): string | null {
+  return useAppSelector(s => s.activeWorkspaceId);
+}
+
+export function useWorkspaces(): Workspace[] {
+  return useAppSelector(s => s.workspaces);
+}
+
+export function useActiveWorkspace(): Workspace | null {
+  const workspaces = useAppSelector(s => s.workspaces);
+  const activeId = useAppSelector(s => s.activeWorkspaceId);
+  if (!activeId) return null;
+  return workspaces.find(w => w.id === activeId) ?? null;
+}
+
+export function useSessions(): Session[] {
+  return useAppSelector(s => s.sessions);
+}
+
+export function useActiveSessionId(): string | null {
+  return useAppSelector(s => s.activeSessionId);
+}
+
+export function useOpenTabs(): Tab[] {
+  return useAppSelector(s => s.openTabs);
+}
+
+export function useActiveTabId(): string | null {
+  return useAppSelector(s => s.activeTabId);
+}
+
+// ── Dispatch Hook ────────────────────────────────────────────────
+
+export function useAppDispatch(): (action: AppAction) => void {
+  return store.dispatch;
+}
+
+// ── Full State (for save/load and App.tsx) ────────────────────────
+// Deprecated for individual components — use selectors instead.
+// Still needed for App.tsx state persistence and LOAD_STATE.
+
+export function useAppState(): AppState {
+  return useAppSelector(s => s);
+}
+
+// ── Provider (simplified — no Context needed for state) ──────────
+// We keep the Provider wrapper for tree structure consistency
+// but it no longer needs to provide state via Context.
+
+const DispatchContext = createContext<(action: AppAction) => void>(store.dispatch);
 
 export function AppProvider({ children }: { children: ReactNode }) {
-  const [state, dispatch] = useReducer(appReducer, initialState);
-
   return (
-    <AppStateContext.Provider value={state}>
-      <AppDispatchContext.Provider value={dispatch}>
-        {children}
-      </AppDispatchContext.Provider>
-    </AppStateContext.Provider>
+    <DispatchContext.Provider value={store.dispatch}>
+      {children}
+    </DispatchContext.Provider>
   );
 }
 
-export function useAppState(): AppState {
-  return useContext(AppStateContext);
-}
+// ── Direct store access (for non-React code) ─────────────────────
 
-export function useAppDispatch(): Dispatch<AppAction> {
-  return useContext(AppDispatchContext);
-}
+export const appStore = store;

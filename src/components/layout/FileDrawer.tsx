@@ -1,14 +1,15 @@
 /* ================================================================
    Fit — FileDrawer Component (Right Sidebar)
+   Optimized: TreeItem memoized with pre-computed Sets,
+   granular selectors, removed duplicate git polling.
    ================================================================ */
 
-import { useState, useCallback, useEffect, useRef } from 'react';
-import { useAppState, useAppDispatch } from '../../stores/appStore';
+import React, { useState, useCallback, useEffect, useRef, useMemo, memo } from 'react';
+import { useAppSelector, useAppDispatch, useGitStatus, useActiveWorkspace, useOpenTabs, useWorkspaces, useActiveWorkspaceId } from '../../stores/appStore';
 import { useTranslation } from '../../i18n';
 import { getFileIcon, FolderClosedIcon, FolderOpenIcon } from '../../utils/fileIcons';
 import { 
   readDir, 
-  gitStatus, 
   gitStage, 
   gitUnstage, 
   gitStageAll, 
@@ -30,58 +31,23 @@ interface TreeItemProps {
   entry: FileEntry;
   depth: number;
   onFileClick: (entry: FileEntry) => void;
+  modifiedPaths: Set<string>;
+  modifiedDirPrefixes: Set<string>;
 }
 
-function TreeItem({ entry, depth, onFileClick }: TreeItemProps) {
+const TreeItem = memo(function TreeItem({ entry, depth, onFileClick, modifiedPaths, modifiedDirPrefixes }: TreeItemProps) {
   const [expanded, setExpanded] = useState(false);
   const [children, setChildren] = useState<FileEntry[] | null>(null);
   const [loading, setLoading] = useState(false);
-  const { openTabs, gitStatus, workspaces, activeWorkspaceId } = useAppState();
 
   const isDir = entry.isDir || (entry as any).is_dir;
 
   const normalizePath = (p: string) => p.replace(/\\/g, '/');
   const normalizedPath = normalizePath(entry.path);
 
-  const isTabModified = !isDir && openTabs.some(t => 
-    t.type === 'editor' && 
-    t.isModified && 
-    t.filePath && 
-    normalizePath(t.filePath) === normalizedPath
-  );
-
-  let isGitModified = false;
-  const activeWorkspace = workspaces.find(w => w.id === activeWorkspaceId);
-  if (gitStatus && gitStatus.isRepo && activeWorkspace && !isDir) {
-    const wsPath = normalizePath(activeWorkspace.path);
-    if (normalizedPath.startsWith(wsPath + '/')) {
-      const relPath = normalizedPath.substring(wsPath.length + 1);
-      isGitModified = gitStatus.staged.some(s => normalizePath(s.path) === relPath) ||
-                      gitStatus.unstaged.some(u => normalizePath(u.path) === relPath);
-    }
-  }
-
-  const isModified = isTabModified || isGitModified;
-
-  const hasTabModifiedChildren = isDir && openTabs.some(t => {
-    if (t.type !== 'editor' || !t.isModified || !t.filePath) return false;
-    const normalizedFile = normalizePath(t.filePath);
-    return normalizedFile.startsWith(normalizedPath + '/');
-  });
-
-  let hasGitModifiedChildren = false;
-  if (gitStatus && gitStatus.isRepo && activeWorkspace && isDir) {
-    const wsPath = normalizePath(activeWorkspace.path);
-    if (normalizedPath.startsWith(wsPath + '/')) {
-      const relPath = normalizedPath.substring(wsPath.length + 1);
-      hasGitModifiedChildren = gitStatus.staged.some(s => normalizePath(s.path).startsWith(relPath + '/')) ||
-                               gitStatus.unstaged.some(u => normalizePath(u.path).startsWith(relPath + '/'));
-    } else if (normalizedPath === wsPath) {
-      hasGitModifiedChildren = (gitStatus.staged.length + gitStatus.unstaged.length) > 0;
-    }
-  }
-
-  const hasModifiedChildren = hasTabModifiedChildren || hasGitModifiedChildren;
+  // O(1) lookup instead of O(n) .some()
+  const isModified = !isDir && modifiedPaths.has(normalizedPath);
+  const hasModifiedChildren = isDir && modifiedDirPrefixes.has(normalizedPath + '/');
 
   const handleClick = async () => {
     if (isDir) {
@@ -166,16 +132,17 @@ function TreeItem({ entry, depth, onFileClick }: TreeItemProps) {
           entry={child}
           depth={depth + 1}
           onFileClick={onFileClick}
+          modifiedPaths={modifiedPaths}
+          modifiedDirPrefixes={modifiedDirPrefixes}
         />
       ))}
     </>
   );
-}
+});
 
 import type { GitFileStatus } from '../../types';
-import React from 'react';
 
-const GitPanelItem = React.memo(({
+const GitPanelItem = memo(({
   file,
   isStaged,
   onItemClick,
@@ -246,37 +213,39 @@ const GitPanelItem = React.memo(({
   );
 });
 
-function GitPanel({ refresh }: { refresh: () => Promise<void> }) {
+function GitPanel() {
   const { t } = useTranslation();
-  const { activeWorkspaceId, workspaces, gitStatus: status } = useAppState();
+  const activeWorkspaceId = useActiveWorkspaceId();
+  const workspaces = useWorkspaces();
+  const status = useGitStatus();
   const dispatch = useAppDispatch();
   const [commitMessage, setCommitMessage] = useState('');
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isSpinning, setIsSpinning] = useState(false);
 
+  const activeWorkspace = workspaces.find(w => w.id === activeWorkspaceId);
+
+  // No more refresh prop — the global App.tsx polling handles git status updates
+
   const handleRefreshClick = useCallback(async () => {
     if (isSpinning) return;
     setIsSpinning(true);
-    await refresh();
+    // Trigger an immediate git status refresh via the global polling
+    // by importing gitStatus and dispatching
+    if (activeWorkspace) {
+      try {
+        const { gitStatus: gitStatusFn } = await import('../../utils/ipc');
+        const res = await gitStatusFn(activeWorkspace.path);
+        dispatch({ type: 'SET_GIT_STATUS', payload: res });
+      } catch (err) {
+        console.error('Failed to refresh git status:', err);
+      }
+    }
     setTimeout(() => {
       setIsSpinning(false);
     }, 600);
-  }, [refresh, isSpinning]);
-
-  const activeWorkspace = workspaces.find(w => w.id === activeWorkspaceId);
-
-  const handleItemClick = useCallback((fileRelPath: string) => {
-    if (!activeWorkspace) return;
-    const absPath = `${activeWorkspace.path}/${fileRelPath}`.replace(/\\/g, '/');
-    dispatch({ type: 'SET_DIFF_FILE_PATH', payload: absPath });
-    dispatch({ type: 'SET_DIFF_SIDEBAR_OPEN', payload: true });
-  }, [activeWorkspace, dispatch]);
-
-  useEffect(() => {
-    setCommitMessage('');
-    setError(null);
-  }, [activeWorkspaceId]);
+  }, [activeWorkspace, isSpinning, dispatch]);
 
   const handleOpenFile = useCallback((fileRelPath: string) => {
     if (!activeWorkspace) return;
@@ -291,6 +260,26 @@ function GitPanel({ refresh }: { refresh: () => Promise<void> }) {
         filePath: absPath,
       },
     });
+  }, [activeWorkspace, dispatch]);
+
+  const handleItemClick = useCallback((fileRelPath: string) => {
+    handleOpenFile(fileRelPath);
+  }, [handleOpenFile]);
+
+  useEffect(() => {
+    setCommitMessage('');
+    setError(null);
+  }, [activeWorkspaceId]);
+
+  const refresh = useCallback(async () => {
+    if (!activeWorkspace) return;
+    try {
+      const { gitStatus: gitStatusFn } = await import('../../utils/ipc');
+      const res = await gitStatusFn(activeWorkspace.path);
+      dispatch({ type: 'SET_GIT_STATUS', payload: res });
+    } catch (err) {
+      console.error('Failed to refresh git status:', err);
+    }
   }, [activeWorkspace, dispatch]);
 
   const handleDiscard = useCallback(async (fileRelPath: string) => {
@@ -635,7 +624,13 @@ function GitPanel({ refresh }: { refresh: () => Promise<void> }) {
 
 export function FileDrawer() {
   const { t } = useTranslation();
-  const { fileDrawerOpen, activeWorkspaceId, workspaces, drawerTab, gitStatus: status, panelSizes } = useAppState();
+  const fileDrawerOpen = useAppSelector(s => s.fileDrawerOpen);
+  const activeWorkspaceId = useActiveWorkspaceId();
+  const workspaces = useWorkspaces();
+  const drawerTab = useAppSelector(s => s.drawerTab);
+  const status = useGitStatus();
+  const panelSizes = useAppSelector(s => s.panelSizes);
+  const openTabs = useOpenTabs();
   const dispatch = useAppDispatch();
   const [rootEntries, setRootEntries] = useState<FileEntry[]>([]);
   const [loading, setLoading] = useState(false);
@@ -690,6 +685,59 @@ export function FileDrawer() {
 
   const activeWorkspace = workspaces.find(w => w.id === activeWorkspaceId);
 
+  // Pre-compute Sets for O(1) modified path lookups in TreeItem
+  const { modifiedPaths, modifiedDirPrefixes } = useMemo(() => {
+    const paths = new Set<string>();
+    const dirPrefixes = new Set<string>();
+    const normalizePath = (p: string) => p.replace(/\\/g, '/');
+
+    if (activeWorkspace) {
+      const wsPath = normalizePath(activeWorkspace.path);
+
+      // From git status
+      if (status && status.isRepo) {
+        const addPath = (relPath: string) => {
+          const normalized = normalizePath(relPath);
+          const absPath = `${wsPath}/${normalized}`;
+          paths.add(absPath);
+          // Add all parent directory prefixes
+          const parts = normalized.split('/');
+          for (let i = 1; i < parts.length; i++) {
+            dirPrefixes.add(`${wsPath}/${parts.slice(0, i).join('/')}/`);
+          }
+          // Also add wsPath itself as having modified children
+          if (parts.length > 0) {
+            dirPrefixes.add(`${wsPath}/`);
+          }
+        };
+
+        status.staged.forEach(s => addPath(s.path));
+        status.unstaged.forEach(u => addPath(u.path));
+      }
+
+      // From modified tabs
+      openTabs.forEach(tab => {
+        if (tab.type === 'editor' && tab.isModified && tab.filePath) {
+          const absPath = normalizePath(tab.filePath);
+          paths.add(absPath);
+          // Add parent directory prefixes
+          if (absPath.startsWith(wsPath + '/')) {
+            const relPath = absPath.substring(wsPath.length + 1);
+            const parts = relPath.split('/');
+            for (let i = 1; i < parts.length; i++) {
+              dirPrefixes.add(`${wsPath}/${parts.slice(0, i).join('/')}/`);
+            }
+            if (parts.length > 0) {
+              dirPrefixes.add(`${wsPath}/`);
+            }
+          }
+        }
+      });
+    }
+
+    return { modifiedPaths: paths, modifiedDirPrefixes: dirPrefixes };
+  }, [status, openTabs, activeWorkspace]);
+
   const refreshFiles = useCallback(() => {
     if (!activeWorkspace) return;
     setLoading(true);
@@ -719,22 +767,6 @@ export function FileDrawer() {
         .finally(() => setLoading(false));
     }
   }, [fileDrawerOpen, activeWorkspace, drawerTab, rootEntries.length]);
-
-  const refreshGit = useCallback(async () => {
-    if (!activeWorkspace) return;
-    try {
-      const res = await gitStatus(activeWorkspace.path);
-      dispatch({ type: 'SET_GIT_STATUS', payload: res });
-    } catch (err) {
-      console.error('Failed to query git status:', err);
-    }
-  }, [activeWorkspace, dispatch]);
-
-  useEffect(() => {
-    if (fileDrawerOpen && activeWorkspace) {
-      refreshGit();
-    }
-  }, [fileDrawerOpen, activeWorkspace, refreshGit]);
 
   // Debounced search effect
   useEffect(() => {
@@ -878,7 +910,7 @@ export function FileDrawer() {
                     </button>
                     <button 
                       className="file-drawer__action-btn" 
-                      onClick={() => { refreshFiles(); refreshGit(); }} 
+                      onClick={() => { refreshFiles(); }} 
                       title={t('drawer.refresh')}
                     >
                       <RotateCw size={14} />
@@ -1037,6 +1069,8 @@ export function FileDrawer() {
                         entry={entry}
                         depth={0}
                         onFileClick={handleFileClick}
+                        modifiedPaths={modifiedPaths}
+                        modifiedDirPrefixes={modifiedDirPrefixes}
                       />
                     ))
                   )}
@@ -1045,7 +1079,7 @@ export function FileDrawer() {
             </div>
           </div>
         ) : (
-          <GitPanel refresh={refreshGit} />
+          <GitPanel />
         )}
       </div>
     </div>
