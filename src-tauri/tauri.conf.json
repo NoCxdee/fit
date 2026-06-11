@@ -48,7 +48,7 @@
     "updater": {
       "active": true,
       "endpoints": [
-        "https://raw.githubusercontent.com/NoCxdee/Fit-Code/main/updater.json"
+        "https://raw.githubusercontent.com/NoCxdee/fit/main/updater.json"
       ],
       "dialog": false,
       "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDQ5MDdBOUI5MzFBQjI2MTkKUldRWkpxc3h1YWtIU2FhNEpZb2NQSXJCNEhtdHB6Y3BoaUQ1eU1vMTd6cVhvUGZaTnkwcEI0Mm0K"
