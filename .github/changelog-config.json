@@ -1,0 +1,61 @@
+{
+  "categories": [
+    {
+      "title": "🚀 Features",
+      "labels": ["feature", "enhancement", "feat"]
+    },
+    {
+      "title": "🐛 Bug Fixes",
+      "labels": ["bug", "fix", "bugfix"]
+    },
+    {
+      "title": "🎨 UI / Design",
+      "labels": ["ui", "style", "design"]
+    },
+    {
+      "title": "🛠 Improvements",
+      "labels": ["refactor", "perf", "improvement"]
+    },
+    {
+      "title": "📦 Other Changes",
+      "labels": ["chore", "docs", "test", "ci"]
+    }
+  ],
+  "ignore_labels": [
+    "ignore"
+  ],
+  "sort": {
+    "order": "ASC",
+    "on_property": "mergedAt"
+  },
+  "template": "${{CHANGELOG}}\n\n---\n*For full details, view the [commit history](${{COMPARE_URL}}).*",
+  "pr_template": "- ${{TITLE}}",
+  "empty_template": "- Minor updates and improvements.",
+  "label_extractor": [
+    {
+      "pattern": "^(?:feat|feature|enhancement)(?:\\([^)]+\\))?:",
+      "target": "feat"
+    },
+    {
+      "pattern": "^(?:fix|bug|bugfix)(?:\\([^)]+\\))?:",
+      "target": "fix"
+    },
+    {
+      "pattern": "^(?:style|ui|design)(?:\\([^)]+\\))?:",
+      "target": "style"
+    },
+    {
+      "pattern": "^(?:refactor|perf|improvement)(?:\\([^)]+\\))?:",
+      "target": "refactor"
+    },
+    {
+      "pattern": "^(?:chore|docs|test|ci)(?:\\([^)]+\\))?:",
+      "target": "chore"
+    }
+  ],
+  "commit_extractor": {
+    "commit_template": "- ${{TITLE}}",
+    "pattern": "^(.*)$",
+    "target": "$1"
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "$schema": "https://raw.githubusercontent.com/fallow-rs/fallow/main/schema.json",
+  "entry": [
+    "src/index.{ts,tsx,js,jsx}",
+    "src/main.{ts,tsx,js,jsx}"
+  ],
+  "duplicates": {
+    "minLines": 1000,
+    "minTokens": 10000
+  },
+  "health": {
+    "maxCyclomatic": 1000,
+    "maxCognitive": 1000,
+    "maxCrap": 10000.0
+  },
+  "rules": {}
+}

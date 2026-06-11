@@ -1,0 +1,86 @@
+[package]
+name = "fit"
+version = "1.0.0"
+description = "Fit — Ultra-lightweight agentic development environment"
+authors = ["you"]
+license = "MIT"
+edition = "2021"
+rust-version = "1.77.2"
+
+[lib]
+name = "app_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2.6.2", features = [] }
+
+[dependencies]
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+log = "0.4"
+tauri = { version = "2.11.2", features = ["protocol-asset"] }
+tauri-plugin-log = "2"
+tauri-plugin-dialog = "2"
+tauri-plugin-fs = "2"
+tauri-plugin-shell = "2"
+tauri-plugin-updater = "2"
+tokio = { version = "1", features = ["full"] }
+portable-pty = "0.8"
+dirs = "6"
+uuid = { version = "1", features = ["v4"] }
+windows-sys = { version = "0.52", features = ["Win32_Foundation", "Win32_System_DataExchange", "Win32_System_Memory", "Win32_UI_Shell", "Win32_System_Com", "Win32_Media_Audio"] }
+reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "stream", "json"] }
+similar = "2"
+anyhow = "1.0"
+
+
+# Audio recording and DSP
+cpal = "0.16.0"
+rubato = "0.16.2"
+hound = "3.5.1"
+rustfft = "6.4.0"
+
+# Voice Activity Detection (Silero ONNX wrapper)
+vad-rs = { git = "https://github.com/cjpais/vad-rs", default-features = false }
+
+# Local transcription engine wrapper
+transcribe-rs = { version = "0.3.3", features = ["onnx"] }
+
+# Text analysis and post-processing
+strsim = "0.11.0"
+natural = "0.5.0"
+regex = "1"
+once_cell = "1"
+
+# Model archive and file operations
+tar = "0.4.44"
+flate2 = "1.0"
+sha2 = "0.10"
+futures-util = "0.3"
+
+[target.'cfg(windows)'.dependencies]
+# Hardware acceleration features for Windows
+transcribe-rs = { version = "0.3.3", features = ["ort-directml", "onnx"] }
+# Windows Registry scanning for microphone permission
+windows = { version = "0.61.3", features = [
+  "Win32_Media_Audio_Endpoints",
+  "Win32_System_Com_StructuredStorage",
+  "Win32_System_Variant",
+  "Win32_Foundation",
+  "Win32_UI_WindowsAndMessaging",
+] }
+winreg = "0.55"
+
+[target.'cfg(target_os = "macos")'.dependencies]
+# Hardware acceleration features for macOS
+transcribe-rs = { version = "0.3.3", features = ["ort-coreml", "onnx"] }
+
+
+
+
+[profile.release]
+panic = "abort"
+codegen-units = 1
+lto = true
+opt-level = "s"
+strip = true

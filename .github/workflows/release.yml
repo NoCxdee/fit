@@ -1,0 +1,178 @@
+name: Release Build and Update
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build:
+    permissions:
+      contents: write
+    strategy:
+      fail-fast: false
+      matrix:
+        platform: [macos-latest, windows-latest]
+    runs-on: ${{ matrix.platform }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build frontend and compile Tauri app
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        with:
+          tagName: ${{ github.ref_name }}
+          releaseName: 'Fit v__VERSION__'
+          releaseDraft: false
+          prerelease: false
+          generateReleaseNotes: false
+          releaseBody: 'Release build in progress...'
+          updaterJsonPreferNsis: true
+
+  updater-sync:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+        with:
+          ref: main
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '18'
+
+      - name: Generate Consolidated updater.json
+        uses: actions/github-script@v9
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          script: |
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const tag = context.payload.ref.replace('refs/tags/', '');
+            const version = tag.replace(/^v/, '');
+            
+            console.log(`Consolidating update manifest for version: ${version} and tag: ${tag}`);
+            
+            const { data: release } = await github.rest.repos.getReleaseByTag({
+              owner,
+              repo,
+              tag
+            });
+            
+            const assets = release.assets;
+            console.log(`Found ${assets.length} assets in release.`);
+            
+            const platforms = {};
+            
+            async function getAssetText(asset) {
+              const response = await github.request({
+                method: 'GET',
+                url: asset.browser_download_url,
+                responseType: 'arraybuffer'
+              });
+              return Buffer.from(response.data).toString('utf-8').trim();
+            }
+            
+            for (const asset of assets) {
+              const name = asset.name;
+              
+              if (name.endsWith('.sig')) {
+                continue;
+              }
+              
+              const sigAsset = assets.find(a => a.name === `${name}.sig`);
+              if (!sigAsset) {
+                console.log(`No signature found for asset: ${name}`);
+                continue;
+              }
+              
+              console.log(`Processing signed asset: ${name}`);
+              const signature = await getAssetText(sigAsset);
+              const downloadUrl = asset.browser_download_url;
+              
+              if (name.includes('x64') && name.endsWith('.msi')) {
+                platforms['windows-x86_64'] = { signature, url: downloadUrl };
+                platforms['windows-x86_64-msi'] = { signature, url: downloadUrl };
+              } else if (name.includes('x64') && name.endsWith('.exe')) {
+                platforms['windows-x86_64-nsis'] = { signature, url: downloadUrl };
+              } else if (name.endsWith('.dmg')) {
+                if (name.includes('aarch64') || name.includes('arm64')) {
+                  platforms['darwin-aarch64'] = { signature, url: downloadUrl };
+                } else if (name.includes('x64') || name.includes('x86_64')) {
+                  platforms['darwin-x86_64'] = { signature, url: downloadUrl };
+                } else {
+                  platforms['darwin-aarch64'] = { signature, url: downloadUrl };
+                  platforms['darwin-x86_64'] = { signature, url: downloadUrl };
+                }
+              } else if (name.endsWith('.app.tar.gz')) {
+                if (name.includes('aarch64') || name.includes('arm64')) {
+                  platforms['darwin-aarch64'] = { signature, url: downloadUrl };
+                } else if (name.includes('x64') || name.includes('x86_64')) {
+                  platforms['darwin-x86_64'] = { signature, url: downloadUrl };
+                } else {
+                  platforms['darwin-aarch64'] = { signature, url: downloadUrl };
+                  platforms['darwin-x86_64'] = { signature, url: downloadUrl };
+                }
+              }
+            }
+            
+            const fs = require('fs');
+            let updater = {};
+            if (fs.existsSync('updater.json')) {
+              updater = JSON.parse(fs.readFileSync('updater.json', 'utf8'));
+            }
+            
+            updater.version = version;
+            updater.pub_date = new Date().toISOString();
+            updater.platforms = platforms;
+            
+            fs.writeFileSync('updater.json', JSON.stringify(updater, null, 2) + '\n', 'utf-8');
+            console.log('Generated updater.json:', JSON.stringify(updater, null, 2));
+            
+            console.log('Updating GitHub Release body with notes...');
+            await github.rest.repos.updateRelease({
+              owner,
+              repo,
+              release_id: release.id,
+              body: updater.notes || 'Minor updates and improvements.'
+            });
+
+      - name: Commit and Push updater.json
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          
+          git fetch origin main
+          git checkout main
+          git pull origin main
+          
+          if git diff --quiet updater.json; then
+            echo "No changes to updater.json, skipping push."
+          else
+            git add updater.json
+            git commit -m "chore: auto-update updater.json to ${{ github.ref_name }} [skip ci]"
+            git push "https://${GITHUB_ACTOR}:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" main
+          fi
