@@ -1,23 +1,23 @@
 {
   "version": "1.0.0",
   "notes": "## Fit v1.0.0\n\n- chore: fix release notes in updater.json for v1.0.8",
-  "pub_date": "2026-06-11T12:41:36.227Z",
+  "pub_date": "2026-06-11T14:16:57.501Z",
   "platforms": {
     "windows-x86_64-nsis": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVTV2lPcUIrM3NlcXVrUGM4QnBzc1JraEFkWThTanVZaUd0SWZvOWV1NU10cVl4MCt6ZDZoYk43Y2RKK1huYll5WjUyeXpnV3NpOEFCbE5HMk1Od1h5OUlHTGJtY3U3UVFRPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgxMTgxNjc2CWZpbGU6Rml0XzEuMC44X3g2NC1zZXR1cC5leGUKTjVuOEIzZTAzbmlkVzNWc0tPU3gzcDN6Ri9yK2MxNUFUUDdYNXdHV043WnZRL0pIWENzRnlWM0lWSUY2Y2JoSGc1ZXdtNHpXTE12SVpUbFYxeTZVQ1E9PQo=",
-      "url": "https://github.com/NoCxdee/fit/releases/download/v1.0.8/Fit_1.0.8_x64-setup.exe"
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRWkpxc3h1YWtIU2JFcWdkWktVR2tFYnVOWEk4UThtOU9wZzVuT2gyb25KdXJEa0dMUHFzWUlJUjNyZ3htamIyMGRBZ1BkeXJ4ZzdKNFBTRTdHbms1U1htb0xCWU1sSHdvPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgxMTg3MzkwCWZpbGU6Rml0XzEuMC4wX3g2NC1zZXR1cC5leGUKbUUvKzUrSUFYQ1RnNTZWTVN2eks4NnA4SXpSeXRRWEFmdHpPZ0NSbm9lMDl4VlZ2V3p2QUE4SlRiNE0rMzJTbzRReXBUdStFMW44Y0xhTE5FVGF1Q1E9PQo=",
+      "url": "https://github.com/NoCxdee/Fit-Code/releases/download/v1.0.0/Fit_1.0.0_x64-setup.exe"
     },
     "windows-x86_64": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVTV2lPcUIrM3NlcWdaQllZWEJGcmFHSEtJNXBtckI1dTFjOE91bUI5MjIvMUgzV2tVeXRYZUgzOWd2MjlnRFgzVFk0M2dhSlRJQitiL05WYWJacHFPQmtFWXdqVDNUclFnPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgxMTgxNjc2CWZpbGU6Rml0XzEuMC44X3g2NF9lbi1VUy5tc2kKNEYzT0hGbElBdytPL2ZYbXh2UVVyOEtYNjR1MzA2TDFOdXhSK1ZoRnhuU0loSmZEc0FrK1crcHl1YkdHR1UzdzJpcFVIQ3ZlRjQ5YUJROHRhbUJoRGc9PQo=",
-      "url": "https://github.com/NoCxdee/fit/releases/download/v1.0.8/Fit_1.0.8_x64_en-US.msi"
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRWkpxc3h1YWtIU2VkeENmZWZoOG5XaWFPWUVjeWgyaURwWjBzSWFHbEVsSm9jR2RqWjlnNXp6RjdKemtaNmFuS3ZFTStLTnh2OGtINmhac3p3bEQ3cjJMaHNHUFFKbGc4PQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgxMTg3MzkwCWZpbGU6Rml0XzEuMC4wX3g2NF9lbi1VUy5tc2kKVGF4THVHelVXRTBGR3NBOEpnNmV1QWZuRm03OW5lVkYvelZuWStzajVvZ05LK0RwSHMvOVB1RXZ4WkJaVG5YNU1aWndlZ1c0TzVjRVh4M1Qzd3FJQkE9PQo=",
+      "url": "https://github.com/NoCxdee/Fit-Code/releases/download/v1.0.0/Fit_1.0.0_x64_en-US.msi"
     },
     "windows-x86_64-msi": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVTV2lPcUIrM3NlcWdaQllZWEJGcmFHSEtJNXBtckI1dTFjOE91bUI5MjIvMUgzV2tVeXRYZUgzOWd2MjlnRFgzVFk0M2dhSlRJQitiL05WYWJacHFPQmtFWXdqVDNUclFnPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgxMTgxNjc2CWZpbGU6Rml0XzEuMC44X3g2NF9lbi1VUy5tc2kKNEYzT0hGbElBdytPL2ZYbXh2UVVyOEtYNjR1MzA2TDFOdXhSK1ZoRnhuU0loSmZEc0FrK1crcHl1YkdHR1UzdzJpcFVIQ3ZlRjQ5YUJROHRhbUJoRGc9PQo=",
-      "url": "https://github.com/NoCxdee/fit/releases/download/v1.0.8/Fit_1.0.8_x64_en-US.msi"
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRWkpxc3h1YWtIU2VkeENmZWZoOG5XaWFPWUVjeWgyaURwWjBzSWFHbEVsSm9jR2RqWjlnNXp6RjdKemtaNmFuS3ZFTStLTnh2OGtINmhac3p3bEQ3cjJMaHNHUFFKbGc4PQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgxMTg3MzkwCWZpbGU6Rml0XzEuMC4wX3g2NF9lbi1VUy5tc2kKVGF4THVHelVXRTBGR3NBOEpnNmV1QWZuRm03OW5lVkYvelZuWStzajVvZ05LK0RwSHMvOVB1RXZ4WkJaVG5YNU1aWndlZ1c0TzVjRVh4M1Qzd3FJQkE9PQo=",
+      "url": "https://github.com/NoCxdee/Fit-Code/releases/download/v1.0.0/Fit_1.0.0_x64_en-US.msi"
     },
     "darwin-aarch64": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVTV2lPcUIrM3NlcXBGRllTQ3dna1ozMHV6UmZNaVFMMW1MTXhSeXpSVE5xNTVvR3dKa0hWNi9aRmNCZDNiZHBQNTZ5b2xFZzlOcmtmK0NQRXN5ZjZPTzJ6Y29iZkdISXdjPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgxMTgxNDIxCWZpbGU6Rml0LmFwcC50YXIuZ3oKSkQzcVkyS0hQQmhtcmtzZTlYUXhBSXN4U3lJOVdzM2Q1Tm1FZE0vQUtxNVFBRE5Wck1lQnNlNjhzL2JqM0Y5TFRJSHVKSVF4aXBsVVFNaWVPV3o2RFE9PQo=",
-      "url": "https://github.com/NoCxdee/fit/releases/download/v1.0.8/Fit_aarch64.app.tar.gz"
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRWkpxc3h1YWtIU2NmUHNZam9sTTV1YVhnemhtVmFFaTA2TFlOaEtkVk9aZnZ3bDZ5SVRMNlFrQ3AzTDBYell6TC90a0NWd2prZjYzelVWK3IyeUhPSDRCWFRWeG5kT2dzPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgxMTg3MjUxCWZpbGU6Rml0LmFwcC50YXIuZ3oKNDVpUmtUUUt2ZU1GZzZtUFZRNTRhR1NXSVBzOFJpRDhjYmpCaFhhSWpvTnRYY1AwcHc0NVVlNk5IN2RxQlFTcVk3akdUODBubnJ0enNDOFRacGFNREE9PQo=",
+      "url": "https://github.com/NoCxdee/Fit-Code/releases/download/v1.0.0/Fit_aarch64.app.tar.gz"
     }
   }
 }
