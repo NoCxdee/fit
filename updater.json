@@ -1,23 +1,23 @@
 {
   "version": "1.0.1",
   "notes": "## Fit v1.0.1\n\n- feat(ui): implement LeftSidebar component for projects and sessions management\n- feat(ui): implement Portal component using React createPortal\n- feat(ipc): add checkDirectoryExists and resolveWorkspacePath IPC helpers\n- refactor(ui): update Rust icon usage and add custom inline SVG MarkdownIcon in getFileIcon helper\n- refactor(types): declare RESOLVE_WORKSPACE_PATH in AppAction union\n- feat(store): add RESOLVE_WORKSPACE_PATH action and update active workspace/session handling\n- style: replace workspace bar with left sidebar layout and style global tooltips and portals\n- refactor(i18n): unify description, update session texts, and add terminal shortcuts translations\n- refactor(terminal): persist active CLI, replace split dropdown with direct split buttons, and style updates\n- refactor(ui): remove translation condition in LivePreview element inspector tooltip\n- refactor(ui): simplify WorkspaceEditModal to only support project renaming\n- refactor(ui): update Italian translation order in WelcomeScreen relative time helper\n- refactor(ui): clean up language options and filter dictation models in SettingsModal\n- refactor(ui): remove i18n usage in SessionContextMenu\n- refactor(git): clean up and simplify GitPanel action dropdown menus and modal overlays\n- feat(ui): support deleting multiple selected files with list preview in modal\n- feat(ui): update FileContextMenu to support multi-select and conditional rename\n- feat(ui): integrate LeftSidebar, custom tooltips, and handle missing workspaces\n- refactor(tauri): register new workspace path resolution commands in app runner\n- feat(tauri): auto-resolve renamed/missing workspace paths on state load\n- feat(tauri): add check_directory_exists command to filesystem module\n- chore: fix release notes in updater.json\n- chore: update tauri updater endpoint to fit",
-  "pub_date": "2026-06-11T14:16:57.501Z",
+  "pub_date": "2026-06-12T22:01:13.774Z",
   "platforms": {
     "windows-x86_64-nsis": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRWkpxc3h1YWtIU2JFcWdkWktVR2tFYnVOWEk4UThtOU9wZzVuT2gyb25KdXJEa0dMUHFzWUlJUjNyZ3htamIyMGRBZ1BkeXJ4ZzdKNFBTRTdHbms1U1htb0xCWU1sSHdvPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgxMTg3MzkwCWZpbGU6Rml0XzEuMC4wX3g2NC1zZXR1cC5leGUKbUUvKzUrSUFYQ1RnNTZWTVN2eks4NnA4SXpSeXRRWEFmdHpPZ0NSbm9lMDl4VlZ2V3p2QUE4SlRiNE0rMzJTbzRReXBUdStFMW44Y0xhTE5FVGF1Q1E9PQo=",
-      "url": "https://github.com/NoCxdee/Fit-Code/releases/download/v1.0.0/Fit_1.0.0_x64-setup.exe"
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRWkpxc3h1YWtIU2ZvM0xjSmE1YVJ0NmJpNHZXdndiRUNWY2dnZ0paWFNzQ0ZJVGhjaWljbkRyejM3Qm5GRHF2T1ZHeU5SR2FZSUVDOFkxQnFCVUxWVUZlRkthSVVxN2d3PQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgxMzAxNjUwCWZpbGU6Rml0XzEuMC4xX3g2NC1zZXR1cC5leGUKakg4OHpJeHNQUFIzTFRxc3FYYTl2bFNMMC9HSjFIQlU1YzBGNE5ONld6dnoxeXRCdVN2T294VTNrYzdVYjBjenZCeHgwLzgwZTRIbzJFbTVUUkxhQnc9PQo=",
+      "url": "https://github.com/NoCxdee/Fit/releases/download/v1.0.1/Fit_1.0.1_x64-setup.exe"
     },
     "windows-x86_64": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRWkpxc3h1YWtIU2VkeENmZWZoOG5XaWFPWUVjeWgyaURwWjBzSWFHbEVsSm9jR2RqWjlnNXp6RjdKemtaNmFuS3ZFTStLTnh2OGtINmhac3p3bEQ3cjJMaHNHUFFKbGc4PQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgxMTg3MzkwCWZpbGU6Rml0XzEuMC4wX3g2NF9lbi1VUy5tc2kKVGF4THVHelVXRTBGR3NBOEpnNmV1QWZuRm03OW5lVkYvelZuWStzajVvZ05LK0RwSHMvOVB1RXZ4WkJaVG5YNU1aWndlZ1c0TzVjRVh4M1Qzd3FJQkE9PQo=",
-      "url": "https://github.com/NoCxdee/Fit-Code/releases/download/v1.0.0/Fit_1.0.0_x64_en-US.msi"
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRWkpxc3h1YWtIU1VHQ1dnK1FoODU4UXZBY05VaVEyQ2JQQXhKZDRPeHlPZExVM01WZmhSWFhxTEhZaDBFZDk4Y1kwQkZYOTlzRU96RkxYWEE3U2g1enlYa3NrVFFNbmdBPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgxMzAxNjUwCWZpbGU6Rml0XzEuMC4xX3g2NF9lbi1VUy5tc2kKVjhBcE1hUDE5QzJmSEt3NmVOTE00TnNXVGk4Z2V4LzdNV1BDdUFyelJNdTRYWlVScUJ0UEVYOGJLQ2diUFR3SWFXWHVLa1drYzJ4a0NlMWFySTA5RGc9PQo=",
+      "url": "https://github.com/NoCxdee/Fit/releases/download/v1.0.1/Fit_1.0.1_x64_en-US.msi"
     },
     "windows-x86_64-msi": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRWkpxc3h1YWtIU2VkeENmZWZoOG5XaWFPWUVjeWgyaURwWjBzSWFHbEVsSm9jR2RqWjlnNXp6RjdKemtaNmFuS3ZFTStLTnh2OGtINmhac3p3bEQ3cjJMaHNHUFFKbGc4PQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgxMTg3MzkwCWZpbGU6Rml0XzEuMC4wX3g2NF9lbi1VUy5tc2kKVGF4THVHelVXRTBGR3NBOEpnNmV1QWZuRm03OW5lVkYvelZuWStzajVvZ05LK0RwSHMvOVB1RXZ4WkJaVG5YNU1aWndlZ1c0TzVjRVh4M1Qzd3FJQkE9PQo=",
-      "url": "https://github.com/NoCxdee/Fit-Code/releases/download/v1.0.0/Fit_1.0.0_x64_en-US.msi"
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRWkpxc3h1YWtIU1VHQ1dnK1FoODU4UXZBY05VaVEyQ2JQQXhKZDRPeHlPZExVM01WZmhSWFhxTEhZaDBFZDk4Y1kwQkZYOTlzRU96RkxYWEE3U2g1enlYa3NrVFFNbmdBPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgxMzAxNjUwCWZpbGU6Rml0XzEuMC4xX3g2NF9lbi1VUy5tc2kKVjhBcE1hUDE5QzJmSEt3NmVOTE00TnNXVGk4Z2V4LzdNV1BDdUFyelJNdTRYWlVScUJ0UEVYOGJLQ2diUFR3SWFXWHVLa1drYzJ4a0NlMWFySTA5RGc9PQo=",
+      "url": "https://github.com/NoCxdee/Fit/releases/download/v1.0.1/Fit_1.0.1_x64_en-US.msi"
     },
     "darwin-aarch64": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRWkpxc3h1YWtIU2NmUHNZam9sTTV1YVhnemhtVmFFaTA2TFlOaEtkVk9aZnZ3bDZ5SVRMNlFrQ3AzTDBYell6TC90a0NWd2prZjYzelVWK3IyeUhPSDRCWFRWeG5kT2dzPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgxMTg3MjUxCWZpbGU6Rml0LmFwcC50YXIuZ3oKNDVpUmtUUUt2ZU1GZzZtUFZRNTRhR1NXSVBzOFJpRDhjYmpCaFhhSWpvTnRYY1AwcHc0NVVlNk5IN2RxQlFTcVk3akdUODBubnJ0enNDOFRacGFNREE9PQo=",
-      "url": "https://github.com/NoCxdee/Fit-Code/releases/download/v1.0.0/Fit_aarch64.app.tar.gz"
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRWkpxc3h1YWtIU1VnZWQyd2RoMkEvNEZUTkhNZjFQa280dTNzOGthL0I3eWtFaWlRVU9Rc0ozSytOVTk5aXQyOHI1QTRHMXVpT3djQmMybWZQd2J6NFg3UFFMbnp5dWdRPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgxMzAxMzY4CWZpbGU6Rml0LmFwcC50YXIuZ3oKVkswM3d2Sy9hYk1qajhqUitOVjJMZW13QzE5bnQ0bjZJLzNRdjF0cGVwUlBNUTZGcC9SQXF0TmNsMGZxTEpzVGhDYUJ6OU45alNrcUErbERjYjJsQnc9PQo=",
+      "url": "https://github.com/NoCxdee/Fit/releases/download/v1.0.1/Fit_aarch64.app.tar.gz"
     }
   }
 }
