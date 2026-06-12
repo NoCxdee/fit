@@ -180,7 +180,18 @@ export function TerminalInstance({ terminalId, shell, cwd }: TerminalInstancePro
   const [isDraggingFile, setIsDraggingFile] = useState(false);
   const [dragFileName, setDragFileName] = useState<string | null>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
-  const [selectedCli, setSelectedCli] = useState<string | null>(null);
+  const [selectedCli, setSelectedCliState] = useState<string | null>(() => {
+    return sessionStorage.getItem(`active_cli_${terminalId}`) || null;
+  });
+
+  const setSelectedCli = useCallback((val: string | null) => {
+    setSelectedCliState(val);
+    if (val) {
+      sessionStorage.setItem(`active_cli_${terminalId}`, val);
+    } else {
+      sessionStorage.removeItem(`active_cli_${terminalId}`);
+    }
+  }, [terminalId]);
   const [showCliBar, setShowCliBar] = useState(true);
 
   const linkOpeningModeRef = useRef(linkOpeningMode);
@@ -201,7 +212,6 @@ export function TerminalInstance({ terminalId, shell, cwd }: TerminalInstancePro
   const [skillsSearchQuery, setSkillsSearchQuery] = useState('');
   const skillsSearchRef = useRef<HTMLInputElement>(null);
   const [showCliDropdown, setShowCliDropdown] = useState(false);
-  const [showSplitDropdown, setShowSplitDropdown] = useState(false);
   const [cliSearchQuery, setCliSearchQuery] = useState('');
   const cliSearchRef = useRef<HTMLInputElement>(null);
   const [customClis, setCustomClis] = useState<{ name: string; command: string; description: string; isCustom: boolean }[]>(() => {
@@ -628,157 +638,7 @@ export function TerminalInstance({ terminalId, shell, cwd }: TerminalInstancePro
     );
   };
 
-  const renderSplitDropdown = () => {
-    return (
-      <>
-        <div
-          style={{ position: 'fixed', inset: 0, zIndex: 999 }}
-          onClick={() => setShowSplitDropdown(false)}
-        />
-        <div className="split-dropdown" style={{ zIndex: 1000 }}>
-          <div className="split-dropdown__header">
-            Layout
-          </div>
-          
-          <div className="split-dropdown__section">
-            {/* Split Right */}
-            <div
-              className="split-dropdown__item"
-              onClick={() => {
-                handleSplitRight();
-                setShowSplitDropdown(false);
-              }}
-            >
-              <div className="split-dropdown__item-icon">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                  <rect x="3" y="3" width="18" height="18" rx="2" stroke="var(--color-hairline)" />
-                  <rect x="5" y="5" width="5.5" height="14" rx="1" fill="var(--color-accent-amber)" fillOpacity="0.15" stroke="var(--color-accent-amber)" strokeWidth="1" />
-                  <rect x="13.5" y="5" width="5.5" height="14" rx="1" fill="none" stroke="var(--color-mute)" strokeWidth="1" strokeDasharray="2 2" />
-                  <line x1="12" y1="3" x2="12" y2="21" stroke="var(--color-accent-amber)" strokeWidth="1.5" />
-                </svg>
-              </div>
-              <div className="split-dropdown__item-content">
-                <div className="split-dropdown__item-title">{t('terminal.splitRight')}</div>
-                <div className="split-dropdown__item-desc">{t('terminal.splitRightDesc')}</div>
-              </div>
-            </div>
 
-            {/* Split Down */}
-            <div
-              className="split-dropdown__item"
-              onClick={() => {
-                handleSplitDown();
-                setShowSplitDropdown(false);
-              }}
-            >
-              <div className="split-dropdown__item-icon">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                  <rect x="3" y="3" width="18" height="18" rx="2" stroke="var(--color-hairline)" />
-                  <rect x="5" y="5" width="14" height="5.5" rx="1" fill="var(--color-accent-amber)" fillOpacity="0.15" stroke="var(--color-accent-amber)" strokeWidth="1" />
-                  <rect x="5" y="13.5" width="14" height="5.5" rx="1" fill="none" stroke="var(--color-mute)" strokeWidth="1" strokeDasharray="2 2" />
-                  <line x1="3" y1="12" x2="21" y2="12" stroke="var(--color-accent-amber)" strokeWidth="1.5" />
-                </svg>
-              </div>
-              <div className="split-dropdown__item-content">
-                <div className="split-dropdown__item-title">{t('terminal.splitDown')}</div>
-                <div className="split-dropdown__item-desc">{t('terminal.splitDownDesc')}</div>
-              </div>
-            </div>
-          </div>
-
-          <div className="split-dropdown__divider" />
-          
-          <div className="split-dropdown__header">
-            Preset Grids
-          </div>
-
-          <div className="split-dropdown__grid-row">
-            {/* 2x2 Grid */}
-            <button
-              className="split-dropdown__grid-btn"
-              onClick={() => {
-                handleSplitGrid(2, 2);
-                setShowSplitDropdown(false);
-              }}
-              title="2x2 Grid Layout"
-            >
-              <div className="split-dropdown__grid-btn-icon">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                  <rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" strokeWidth="1.5" />
-                  <rect x="5" y="5" width="5" height="5" rx="1" fill="var(--color-accent-amber)" fillOpacity="0.45" stroke="var(--color-accent-amber)" strokeWidth="1.2" />
-                  <rect x="14" y="5" width="5" height="5" rx="1" fill="var(--color-accent-amber)" fillOpacity="0.45" stroke="var(--color-accent-amber)" strokeWidth="1.2" />
-                  <rect x="5" y="14" width="5" height="5" rx="1" fill="var(--color-accent-amber)" fillOpacity="0.45" stroke="var(--color-accent-amber)" strokeWidth="1.2" />
-                  <rect x="14" y="14" width="5" height="5" rx="1" fill="var(--color-accent-amber)" fillOpacity="0.45" stroke="var(--color-accent-amber)" strokeWidth="1.2" />
-                  <line x1="12" y1="3" x2="12" y2="21" stroke="currentColor" strokeWidth="1" opacity="0.4" />
-                  <line x1="3" y1="12" x2="21" y2="12" stroke="currentColor" strokeWidth="1" opacity="0.4" />
-                </svg>
-              </div>
-              <span className="split-dropdown__grid-btn-label">2 × 2</span>
-            </button>
-
-            {/* 3x2 Grid */}
-            <button
-              className="split-dropdown__grid-btn"
-              onClick={() => {
-                handleSplitGrid(3, 2);
-                setShowSplitDropdown(false);
-              }}
-              title="3x2 Grid Layout"
-            >
-              <div className="split-dropdown__grid-btn-icon">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                  <rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" strokeWidth="1.5" />
-                  <rect x="4" y="5" width="4" height="5" rx="0.5" fill="var(--color-accent-amber)" fillOpacity="0.45" stroke="var(--color-accent-amber)" strokeWidth="1" />
-                  <rect x="10" y="5" width="4" height="5" rx="0.5" fill="var(--color-accent-amber)" fillOpacity="0.45" stroke="var(--color-accent-amber)" strokeWidth="1" />
-                  <rect x="16" y="5" width="4" height="5" rx="0.5" fill="var(--color-accent-amber)" fillOpacity="0.45" stroke="var(--color-accent-amber)" strokeWidth="1" />
-                  
-                  <rect x="4" y="14" width="4" height="5" rx="0.5" fill="var(--color-accent-amber)" fillOpacity="0.45" stroke="var(--color-accent-amber)" strokeWidth="1" />
-                  <rect x="10" y="14" width="4" height="5" rx="0.5" fill="var(--color-accent-amber)" fillOpacity="0.45" stroke="var(--color-accent-amber)" strokeWidth="1" />
-                  <rect x="16" y="14" width="4" height="5" rx="0.5" fill="var(--color-accent-amber)" fillOpacity="0.45" stroke="var(--color-accent-amber)" strokeWidth="1" />
-                  
-                  <line x1="9" y1="3" x2="9" y2="21" stroke="currentColor" strokeWidth="1" opacity="0.4" />
-                  <line x1="15" y1="3" x2="15" y2="21" stroke="currentColor" strokeWidth="1" opacity="0.4" />
-                  <line x1="3" y1="12" x2="21" y2="12" stroke="currentColor" strokeWidth="1" opacity="0.4" />
-                </svg>
-              </div>
-              <span className="split-dropdown__grid-btn-label">3 × 2</span>
-            </button>
-
-            {/* 4x2 Grid */}
-            <button
-              className="split-dropdown__grid-btn"
-              onClick={() => {
-                handleSplitGrid(4, 2);
-                setShowSplitDropdown(false);
-              }}
-              title="4x2 Grid Layout"
-            >
-              <div className="split-dropdown__grid-btn-icon">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round">
-                  <rect x="2" y="3" width="20" height="18" rx="2" stroke="currentColor" strokeWidth="1.5" />
-                  <rect x="3" y="5" width="3" height="5" rx="0.5" fill="var(--color-accent-amber)" fillOpacity="0.45" stroke="var(--color-accent-amber)" strokeWidth="0.8" />
-                  <rect x="8" y="5" width="3" height="5" rx="0.5" fill="var(--color-accent-amber)" fillOpacity="0.45" stroke="var(--color-accent-amber)" strokeWidth="0.8" />
-                  <rect x="13" y="5" width="3" height="5" rx="0.5" fill="var(--color-accent-amber)" fillOpacity="0.45" stroke="var(--color-accent-amber)" strokeWidth="0.8" />
-                  <rect x="18" y="5" width="3" height="5" rx="0.5" fill="var(--color-accent-amber)" fillOpacity="0.45" stroke="var(--color-accent-amber)" strokeWidth="0.8" />
-
-                  <rect x="3" y="14" width="3" height="5" rx="0.5" fill="var(--color-accent-amber)" fillOpacity="0.45" stroke="var(--color-accent-amber)" strokeWidth="0.8" />
-                  <rect x="8" y="14" width="3" height="5" rx="0.5" fill="var(--color-accent-amber)" fillOpacity="0.45" stroke="var(--color-accent-amber)" strokeWidth="0.8" />
-                  <rect x="13" y="14" width="3" height="5" rx="0.5" fill="var(--color-accent-amber)" fillOpacity="0.45" stroke="var(--color-accent-amber)" strokeWidth="0.8" />
-                  <rect x="18" y="14" width="3" height="5" rx="0.5" fill="var(--color-accent-amber)" fillOpacity="0.45" stroke="var(--color-accent-amber)" strokeWidth="0.8" />
-
-                  <line x1="7" y1="3" x2="7" y2="21" stroke="currentColor" strokeWidth="1" opacity="0.4" />
-                  <line x1="12" y1="3" x2="12" y2="21" stroke="currentColor" strokeWidth="1" opacity="0.4" />
-                  <line x1="17" y1="3" x2="17" y2="21" stroke="currentColor" strokeWidth="1" opacity="0.4" />
-                  <line x1="2" y1="12" x2="22" y2="12" stroke="currentColor" strokeWidth="1" opacity="0.4" />
-                </svg>
-              </div>
-              <span className="split-dropdown__grid-btn-label">4 × 2</span>
-            </button>
-          </div>
-        </div>
-      </>
-    );
-  };
 
   const renderCliDropdown = () => {
     const defaultCliLogo = (
@@ -788,13 +648,11 @@ export function TerminalInstance({ terminalId, shell, cwd }: TerminalInstancePro
       </svg>
     );
 
-    const presets = getCliOptions(terminalId).map(p => ({ ...p, isCustom: false }));
-    const mappedCustomClis = customClis.map(c => ({
+    const allClis = customClis.map(c => ({
       ...c,
       logo: defaultCliLogo,
       isCustom: true
     }));
-    const allClis = [...presets, ...mappedCustomClis];
 
     const query = cliSearchQuery.toLowerCase().trim();
     const filteredClis = query
@@ -802,9 +660,8 @@ export function TerminalInstance({ terminalId, shell, cwd }: TerminalInstancePro
       : allClis;
 
     const favorites = filteredClis.filter(c => favoriteClis.includes(c.name));
-    const others = filteredClis.filter(c => !favoriteClis.includes(c.name));
-    const presetsOnly = others.filter(c => !c.isCustom);
-    const customsOnly = others.filter(c => c.isCustom);
+    const customsOnly = filteredClis.filter(c => !favoriteClis.includes(c.name));
+    const presetsOnly: typeof allClis = [];
 
     const renderCliItem = (cli: typeof allClis[0], isFav: boolean) => {
       const isStarred = favoriteClis.includes(cli.name);
@@ -911,13 +768,13 @@ export function TerminalInstance({ terminalId, shell, cwd }: TerminalInstancePro
         />
         
         {isAddingCustomCli ? (
-          <div className="skills-dropdown" style={{ zIndex: 1000, width: '280px', padding: '12px', boxSizing: 'border-box' }}>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              <div style={{ fontSize: '11px', fontWeight: '600', color: 'var(--color-mute)', textTransform: 'uppercase', marginBottom: '4px' }}>
+          <div className="skills-dropdown" style={{ zIndex: 1000, width: '280px', padding: '16px', boxSizing: 'border-box' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <div style={{ fontSize: '11px', fontWeight: '600', color: 'var(--color-mute)', textTransform: 'uppercase', marginBottom: '6px' }}>
                 {t('terminal.addCustomCliTitle')}
               </div>
               
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                 <label style={{ fontSize: '10px', color: 'var(--color-mute)' }}>
                   {t('terminal.cliNameLabel')}
                 </label>
@@ -926,9 +783,9 @@ export function TerminalInstance({ terminalId, shell, cwd }: TerminalInstancePro
                   style={{
                     background: 'rgba(255, 255, 255, 0.03)',
                     border: '1px solid rgba(255, 255, 255, 0.1)',
-                    borderRadius: '4px',
+                    borderRadius: '9999px',
                     color: 'var(--color-body-strong)',
-                    padding: '6px 8px',
+                    padding: '6px 14px',
                     fontSize: '11px',
                     fontFamily: 'var(--font-sans)',
                     outline: 'none',
@@ -941,7 +798,7 @@ export function TerminalInstance({ terminalId, shell, cwd }: TerminalInstancePro
                 />
               </div>
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                 <label style={{ fontSize: '10px', color: 'var(--color-mute)' }}>
                   {t('terminal.cliCommandLabel')}
                 </label>
@@ -950,9 +807,9 @@ export function TerminalInstance({ terminalId, shell, cwd }: TerminalInstancePro
                   style={{
                     background: 'rgba(255, 255, 255, 0.03)',
                     border: '1px solid rgba(255, 255, 255, 0.1)',
-                    borderRadius: '4px',
+                    borderRadius: '9999px',
                     color: 'var(--color-body-strong)',
-                    padding: '6px 8px',
+                    padding: '6px 14px',
                     fontSize: '11px',
                     fontFamily: 'var(--font-mono)',
                     outline: 'none',
@@ -964,7 +821,7 @@ export function TerminalInstance({ terminalId, shell, cwd }: TerminalInstancePro
                 />
               </div>
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                 <label style={{ fontSize: '10px', color: 'var(--color-mute)' }}>
                   {t('terminal.cliDescLabel')}
                 </label>
@@ -973,9 +830,9 @@ export function TerminalInstance({ terminalId, shell, cwd }: TerminalInstancePro
                   style={{
                     background: 'rgba(255, 255, 255, 0.03)',
                     border: '1px solid rgba(255, 255, 255, 0.1)',
-                    borderRadius: '4px',
+                    borderRadius: '9999px',
                     color: 'var(--color-body-strong)',
-                    padding: '6px 8px',
+                    padding: '6px 14px',
                     fontSize: '11px',
                     fontFamily: 'var(--font-sans)',
                     outline: 'none',
@@ -987,7 +844,7 @@ export function TerminalInstance({ terminalId, shell, cwd }: TerminalInstancePro
                 />
               </div>
 
-              <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
+              <div style={{ display: 'flex', gap: '8px', marginTop: '14px' }}>
                 <button
                   onClick={() => {
                     setIsAddingCustomCli(false);
@@ -999,9 +856,9 @@ export function TerminalInstance({ terminalId, shell, cwd }: TerminalInstancePro
                     flex: 1,
                     background: 'rgba(255, 255, 255, 0.05)',
                     border: 'none',
-                    borderRadius: '4px',
+                    borderRadius: '9999px',
                     color: 'var(--color-body-strong)',
-                    padding: '6px',
+                    padding: '6px 12px',
                     fontSize: '11px',
                     cursor: 'pointer',
                     fontWeight: '500',
@@ -1019,9 +876,9 @@ export function TerminalInstance({ terminalId, shell, cwd }: TerminalInstancePro
                     flex: 1,
                     background: (!newCliName.trim() || !newCliCommand.trim()) ? 'rgba(212, 168, 87, 0.3)' : 'var(--color-accent-amber)',
                     border: 'none',
-                    borderRadius: '4px',
+                    borderRadius: '9999px',
                     color: '#1c1816',
-                    padding: '6px',
+                    padding: '6px 12px',
                     fontSize: '11px',
                     cursor: (!newCliName.trim() || !newCliCommand.trim()) ? 'not-allowed' : 'pointer',
                     fontWeight: '600',
@@ -1038,6 +895,45 @@ export function TerminalInstance({ terminalId, shell, cwd }: TerminalInstancePro
                 </button>
               </div>
             </div>
+          </div>
+        ) : allClis.length === 0 ? (
+          <div className="skills-dropdown" style={{ zIndex: 1000, width: '240px', padding: '16px', boxSizing: 'border-box', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '12px', textAlign: 'center' }}>
+            <div style={{ fontSize: '11px', color: 'var(--color-mute)', fontWeight: '400' }}>
+              {t('terminal.noShortcutsYet')}
+            </div>
+            <button
+              onClick={() => setIsAddingCustomCli(true)}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '6px',
+                width: '100%',
+                background: 'rgba(212, 168, 87, 0.08)',
+                border: '1px dashed rgba(212, 168, 87, 0.3)',
+                borderRadius: '9999px',
+                color: 'var(--color-accent-amber)',
+                padding: '6px 14px',
+                fontSize: '11px',
+                cursor: 'pointer',
+                fontWeight: '600',
+                transition: 'all 0.15s ease',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = 'rgba(212, 168, 87, 0.15)';
+                e.currentTarget.style.borderColor = 'var(--color-accent-amber)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = 'rgba(212, 168, 87, 0.08)';
+                e.currentTarget.style.borderColor = 'rgba(212, 168, 87, 0.3)';
+              }}
+            >
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="12" y1="5" x2="12" y2="19" />
+                <line x1="5" y1="12" x2="19" y2="12" />
+              </svg>
+              <span>{t('terminal.addCliShortcut')}</span>
+            </button>
           </div>
         ) : (
           <div className="skills-dropdown" style={{ zIndex: 1000, width: '280px' }}>
@@ -1134,9 +1030,9 @@ export function TerminalInstance({ terminalId, shell, cwd }: TerminalInstancePro
                   width: '100%',
                   background: 'rgba(212, 168, 87, 0.08)',
                   border: '1px dashed rgba(212, 168, 87, 0.3)',
-                  borderRadius: '4px',
+                  borderRadius: '9999px',
                   color: 'var(--color-accent-amber)',
-                  padding: '6px 8px',
+                  padding: '6px 14px',
                   fontSize: '11px',
                   cursor: 'pointer',
                   fontWeight: '500',
@@ -1869,25 +1765,28 @@ export function TerminalInstance({ terminalId, shell, cwd }: TerminalInstancePro
               {showCliDropdown && renderCliDropdown()}
             </div>
           )}
-          <div style={{ position: 'relative', display: 'inline-block' }}>
-            <button
-              className={`terminal-header__action-btn ${showSplitDropdown ? 'terminal-header__action-btn--active' : ''}`}
-              onClick={() => setShowSplitDropdown(prev => !prev)}
-              title="Split"
-              disabled={!isReady}
-            >
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
-                <line x1="12" y1="3" x2="12" y2="21" />
-                <line x1="3" y1="12" x2="21" y2="12" />
-              </svg>
-              <span className="terminal-header__btn-text">Split</span>
-              <svg className="terminal-header__chevron" width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.7, marginLeft: '2px' }}>
-                <polyline points="6 9 12 15 18 9" />
-              </svg>
-            </button>
-            {showSplitDropdown && renderSplitDropdown()}
-          </div>
+          <button
+            className="terminal-header__action-btn"
+            onClick={handleSplitRight}
+            title={t('terminal.splitRight')}
+            disabled={!isReady}
+          >
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="3" y="3" width="18" height="18" rx="2" />
+              <line x1="12" y1="3" x2="12" y2="21" />
+            </svg>
+          </button>
+          <button
+            className="terminal-header__action-btn"
+            onClick={handleSplitDown}
+            title={t('terminal.splitDown')}
+            disabled={!isReady}
+          >
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="3" y="3" width="18" height="18" rx="2" />
+              <line x1="3" y1="12" x2="21" y2="12" />
+            </svg>
+          </button>
           <button
             className={`terminal-header__action-btn ${activeSession?.showPreview ? 'terminal-header__action-btn--active' : ''}`}
             onClick={handleTogglePreview}
@@ -1898,7 +1797,6 @@ export function TerminalInstance({ terminalId, shell, cwd }: TerminalInstancePro
               <line x1="2" y1="12" x2="22" y2="12" />
               <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
             </svg>
-            <span className="terminal-header__btn-text">{t('terminal.labelPreview')}</span>
           </button>
         </div>
         <div className="terminal-header__actions">
