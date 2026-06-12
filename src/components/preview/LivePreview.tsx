@@ -27,7 +27,7 @@ const PRESET_PORTS = [
 ];
 
 export function LivePreview() {
-  const { t, lang } = useTranslation();
+  const { t } = useTranslation();
   const { inspectorMode, sessions, activeSessionId } = useAppState();
   const dispatch = useAppDispatch();
   const [inputValue, setInputValue] = useState('');
@@ -304,7 +304,7 @@ export function LivePreview() {
         <button 
           className={`preview-toolbar__btn ${inspectorMode ? 'preview-toolbar__btn--active' : ''}`} 
           onClick={toggleInspectorMode} 
-          title={lang === 'it' ? 'Ispettore elemento (seleziona e invia al terminale)' : 'Element Inspector (select and send to terminal)'}
+          title="Element Inspector (select and send to terminal)"
           style={inspectorMode ? { color: 'var(--color-accent-amber)' } : {}}
         >
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
