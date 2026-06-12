@@ -249,6 +249,7 @@ export function SettingsModal() {
   const { t, lang, setLang } = useTranslation();
   const [activeTab, setActiveTab] = useState<'general' | 'dictation'>('general');
   const dictation = useDictation();
+  const filteredModels = dictation.models.filter(model => model.id === 'parakeet-tdt-0.6b-v3');
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
   const renderModelCard = (model: ModelInfo) => {
@@ -607,7 +608,6 @@ export function SettingsModal() {
                     value={lang}
                     options={[
                       { value: 'en', label: 'English' },
-                      { value: 'it', label: 'Italiano' },
                       { value: 'es', label: 'Espanol' },
                       { value: 'fr', label: 'Francais' },
                       { value: 'de', label: 'Deutsch' },
@@ -780,7 +780,6 @@ export function SettingsModal() {
                     options={[
                       { value: 'auto', label: 'Auto Detect' },
                       { value: 'en', label: 'English' },
-                      { value: 'it', label: 'Italiano' },
                       { value: 'es', label: 'Español' },
                       { value: 'fr', label: 'Français' },
                       { value: 'de', label: 'Deutsch' }
@@ -856,39 +855,39 @@ export function SettingsModal() {
                 </section>
 
                 {/* ── Models ── */}
-                {dictation.models.some(m => m.is_downloaded) && (
+                {filteredModels.some(m => m.is_downloaded) && (
                   <>
                     <div className="settings-content__subtitle" style={{ animationDelay: '270ms' }}>
                       {t('settings.dictation.downloadedHeader')}
                     </div>
                     <div className="settings-models-list" style={{ animationDelay: '290ms', marginBottom: 'var(--space-lg)' }}>
-                      {dictation.models
+                      {filteredModels
                         .filter(model => model.is_downloaded)
                         .map(model => renderModelCard(model))}
                     </div>
                   </>
                 )}
 
-                {dictation.models.some(m => !m.is_downloaded && m.is_recommended) && (
+                {filteredModels.some(m => !m.is_downloaded && m.is_recommended) && (
                   <>
                     <div className="settings-content__subtitle" style={{ animationDelay: '310ms' }}>
                       {t('settings.dictation.recommendedHeader')}
                     </div>
                     <div className="settings-models-list" style={{ animationDelay: '330ms', marginBottom: 'var(--space-lg)' }}>
-                      {dictation.models
+                      {filteredModels
                         .filter(model => !model.is_downloaded && model.is_recommended)
                         .map(model => renderModelCard(model))}
                     </div>
                   </>
                 )}
 
-                {dictation.models.some(m => !m.is_downloaded && !m.is_recommended) && (
+                {filteredModels.some(m => !m.is_downloaded && !m.is_recommended) && (
                   <>
                     <div className="settings-content__subtitle" style={{ animationDelay: '350ms' }}>
                       {t('settings.dictation.otherHeader')}
                     </div>
                     <div className="settings-models-list" style={{ animationDelay: '370ms' }}>
-                      {dictation.models
+                      {filteredModels
                         .filter(model => !model.is_downloaded && !model.is_recommended)
                         .map(model => renderModelCard(model))}
                     </div>
