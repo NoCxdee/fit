@@ -161,3 +161,9 @@ pub fn delete_item(path: String) -> Result<(), String> {
     }
 }
 
+/// Check if a directory exists.
+#[tauri::command]
+pub fn check_directory_exists(path: String) -> bool {
+    std::path::Path::new(&path).is_dir()
+}
+
