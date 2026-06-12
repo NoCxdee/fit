@@ -13,9 +13,10 @@ interface FileContextMenuProps {
   onClose: () => void;
   onRename: () => void;
   onDelete: () => void;
+  selectionCount?: number;
 }
 
-export function FileContextMenu({ x, y, onClose, onRename, onDelete }: FileContextMenuProps) {
+export function FileContextMenu({ x, y, onClose, onRename, onDelete, selectionCount }: FileContextMenuProps) {
   const menuRef = useRef<HTMLDivElement>(null);
   const { t } = useTranslation();
 
@@ -46,8 +47,9 @@ export function FileContextMenu({ x, y, onClose, onRename, onDelete }: FileConte
     };
   }, [onClose]);
 
+  const isMultiple = selectionCount !== undefined && selectionCount > 1;
   const menuWidth = 150;
-  const menuHeight = 80;
+  const menuHeight = isMultiple ? 40 : 80;
   const adjustedX = Math.min(x, window.innerWidth - menuWidth - 10);
   const adjustedY = Math.min(y, window.innerHeight - menuHeight - 10);
 
@@ -63,19 +65,21 @@ export function FileContextMenu({ x, y, onClose, onRename, onDelete }: FileConte
         zIndex: 1000,
       }}
     >
-      <button
-        className="context-menu__item"
-        onClick={() => {
-          onRename();
-          onClose();
-        }}
-      >
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '8px' }}>
-          <path d="M12 20h9" />
-          <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
-        </svg>
-        {t('file.rename')}
-      </button>
+      {!isMultiple && (
+        <button
+          className="context-menu__item"
+          onClick={() => {
+            onRename();
+            onClose();
+          }}
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '8px' }}>
+            <path d="M12 20h9" />
+            <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
+          </svg>
+          {t('file.rename')}
+        </button>
+      )}
       <button
         className="context-menu__item context-menu__item--danger"
         onClick={() => {
