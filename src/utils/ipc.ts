@@ -18,6 +18,15 @@ export async function readDir(path: string): Promise<FileEntry[]> {
   }
 }
 
+export async function checkDirectoryExists(path: string): Promise<boolean> {
+  try {
+    return await invoke<boolean>('check_directory_exists', { path });
+  } catch (error) {
+    console.error('IPC checkDirectoryExists error:', error);
+    return false;
+  }
+}
+
 export async function readFile(path: string): Promise<string> {
   return await invoke<string>('read_file', { path });
 }
@@ -63,6 +72,15 @@ export async function loadState(): Promise<AppState> {
 
 export async function saveState(state: AppState): Promise<void> {
   return await invoke<void>('save_state', { state });
+}
+
+export async function resolveWorkspacePath(path: string): Promise<[string, string] | null> {
+  try {
+    return await invoke<[string, string] | null>('resolve_workspace_path', { path });
+  } catch (error) {
+    console.error('IPC resolveWorkspacePath error:', error);
+    return null;
+  }
 }
 
 // ── Git / Source Control ──────────────────────────────────────────
