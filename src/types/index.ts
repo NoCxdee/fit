@@ -165,5 +165,6 @@ export type AppAction =
   | { type: 'SET_CAPTURED_ELEMENT'; payload: string | null }
   | { type: 'SET_LINK_OPENING_MODE'; payload: 'browser' | 'preview' }
   | { type: 'SET_SESSION_PREVIEW_URL'; payload: { sessionId: string; previewUrl: string; showPreview?: boolean } }
+  | { type: 'RESOLVE_WORKSPACE_PATH'; payload: { id: string; path: string; name?: string } }
   | { type: 'LOAD_STATE'; payload: AppState };
 
