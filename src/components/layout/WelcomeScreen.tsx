@@ -19,7 +19,6 @@ function formatProjectPath(path: string) {
 function getRelativeTime(timestamp: number | undefined, lang: Lang): string {
   if (!timestamp) {
     switch (lang) {
-      case 'it': return 'qualche tempo fa';
       case 'es': return 'hace algún tiempo';
       case 'fr': return 'il y a quelque temps';
       case 'de': return 'vor einiger Zeit';
@@ -49,14 +48,6 @@ function getRelativeTime(timestamp: number | undefined, lang: Lang): string {
       day: (n: number) => fEn(n, 'day'),
       many: 'long ago'
     },
-    it: {
-      now: 'ora',
-      sec: (n: number) => `${n} second${n > 1 ? 'i' : 'o'} fa`,
-      min: (n: number) => `${n} minut${n > 1 ? 'i' : 'o'} fa`,
-      hour: (n: number) => `${n} or${n > 1 ? 'e' : 'a'} fa`,
-      day: (n: number) => `${n} giorn${n > 1 ? 'i' : 'o'} fa`,
-      many: 'molto tempo fa'
-    },
     es: {
       now: 'ahora mismo',
       sec: (n: number) => fEs(n, 'segundo'),
@@ -72,6 +63,14 @@ function getRelativeTime(timestamp: number | undefined, lang: Lang): string {
       hour: (n: number) => fFr(n, 'heure'),
       day: (n: number) => fFr(n, 'jour'),
       many: 'il y a longtemps'
+    },
+    it: {
+      now: 'proprio ora',
+      sec: (n: number) => `${n} second${n > 1 ? 'i' : 'o'} fa`,
+      min: (n: number) => `${n} minut${n > 1 ? 'i' : 'o'} fa`,
+      hour: (n: number) => `${n} or${n > 1 ? 'e' : 'a'} fa`,
+      day: (n: number) => `${n} giorn${n > 1 ? 'i' : 'o'} fa`,
+      many: 'molto tempo fa'
     },
     de: {
       now: 'gerade eben',
