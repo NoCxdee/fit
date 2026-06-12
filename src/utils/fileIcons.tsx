@@ -7,8 +7,7 @@ import {
   Sass,
   HTML5,
   JSON as JSON_,
-  Markdown,
-  RustDark,
+  RustLight,
   Python,
   NodeJs,
   ViteJS,
@@ -147,6 +146,15 @@ const ImageIcon = () => (
   </svg>
 );
 
+const MarkdownIcon = () => (
+  <svg viewBox="0 0 24 24" width="100%" height="100%" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="3" y="5" width="18" height="14" rx="2" strokeWidth="2" />
+    <path d="M7 15V9l3 3 3-3v6" strokeWidth="2" />
+    <path d="M17 9v6" strokeWidth="2" />
+    <path d="M15 12l2 3 2-3" strokeWidth="2" />
+  </svg>
+);
+
 const DefaultFileIcon = () => (
   <svg viewBox="0 0 24 24" width="100%" height="100%">
     <path d="M19 8.5V20c0 1.1-.9 2-2 2H7c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h6.5L19 8.5z" fill="#3A3D45" />
@@ -239,9 +247,9 @@ export function getFileIcon(filename: string): { icon: React.ReactNode; color?: 
       return { icon: wrap(Sass), color: '#CC6699' };
     case 'md':
     case 'mdx':
-      return { icon: wrap(Markdown), color: '#0EA5E9' };
+      return { icon: <MarkdownIcon />, color: '#0EA5E9' };
     case 'rs':
-      return { icon: wrap(RustDark), color: '#E05A47' };
+      return { icon: wrap(RustLight), color: '#E05A47' };
     case 'py':
     case 'pyw':
       return { icon: wrap(Python), color: '#3776AB' };
